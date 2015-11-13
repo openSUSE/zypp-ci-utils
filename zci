@@ -1,0 +1,164 @@
+#! /usr/bin/python
+#======================================================================
+import sys
+import argparse
+import difflib
+import zciconf
+from zciconf import cout
+from sets import Set
+#======================================================================
+
+def DBG( *args ): cout.ewBLU( 'zci:', *args )
+def MSG( *args ): cout.ewCYA( 'zci:', *args )
+def WAR( *args ): cout.ewMAG( 'zci:', *args )
+def ERR( *args ): cout.ewRED( 'zci:', *args )
+
+#======================================================================
+
+def args2labels( args ):	# args.LABEL list of globs -> list of Labels
+  labels = Set()
+  globs = args.LABEL if type(args.LABEL) is list else [ args.LABEL ]
+  for glob in globs:
+    gotcha = False
+    for l in zciconf.labels( glob ):
+      labels.add( l )
+      if not gotcha: gotcha = True
+    if not gotcha:
+      ERR( 'no label matching \'' , glob, '\'' )
+      args.EXIT = 2
+  return sorted( labels )
+
+def args2label( args ):		# args.LABEL one glob -> one Label
+  label = None
+  labels = args2labels( args )
+  if labels:
+    if len(labels) == 1:
+      label = labels.pop()
+    else:
+      ERR( 'multiple labels  matching \'' , args.LABEL, '\': ', labels )
+      args.EXIT = 2
+  return label
+
+#======================================================================
+
+def lCMD( args ):
+  labels = args2labels( args )
+  for l in labels:
+    print l
+
+def laCMD( args ):
+  if not zciconf.kAllLabels:
+    zciconf.kAllLabels = True
+    args.all = True
+  lCMD( args )
+
+#======================================================================
+
+def cnfCMD( args ):
+  labels = args2labels( args )
+  if labels:
+    print 'Configuration of %s:' % zciconf.whichLabels()
+    for l in labels:
+      print '%s %-10s %s' % ( ' ' if l.isMaintained else '#', l, zciconf.develPrj( l ) )
+
+#======================================================================
+
+def diffChanges( src, trg ):
+  """Cat two osc (changes) Files and print their condensed diff."""
+  sc = []
+  tc = []
+  for line in src.cat(): sc.append( line )
+  for line in trg.cat(): tc.append( line )
+  for line in difflib.unified_diff( tc, sc, n=0 ):
+      if line[0] == '@':
+	cout.wCYA( line )
+      elif line[0] == '+' and line[0:2] != '++':
+	cout.wlGRE( line )
+      elif line[0] == '-' and line[0:2] != '--':
+	cout.wlRED( line )
+
+def diffFile( src, trg ):
+  """Test whether two osc.Files differ and print the result."""
+  diff = ( src != trg )
+  if diff:
+    if src.name != trg.name:
+      print '%s (%s)' % ( cout.sRED(src.vstr), cout.sBLU(trg.name) )
+    else:
+      cout.wlRED( src.vstr )
+  else:
+    cout.wlBLU( src.vstr )
+  return diff
+
+def diffPkg( args, request, pkg ):
+  """Test whether two osc.Packages, derived from a Request, differ."""
+  print '\n== %-15s %s (%s)' % ( pkg, request.srcPrj, cout.sBLU(request.trgPrj) )
+  srcPkg = request.srcPrj.pkg( pkg )
+  trgPkg = request.trgPrj.pkg( pkg )
+  tdiff = diffFile( srcPkg.tarball, trgPkg.tarball )
+  cdiff = diffFile( srcPkg.changes, trgPkg.changes )
+  diff = ( tdiff or cdiff )
+  if diff:
+    if not cdiff:
+      cout.wlCYA( '@@ MISSING CHANGES ENTRY!!!' )
+    else:
+      if args.verbose:
+	diffChanges( srcPkg.changes, trgPkg.changes )
+      request.lastSubmission()
+
+  return diff
+
+
+def chkCMD( args ):
+  label = args2label( args )
+  if label:
+    develPrj = zciconf.develPrj( label )
+    pkgs = args.PKGS if args.PKGS else develPrj.corePkgs
+    for pkg in pkgs:
+      if diffPkg( args, develPrj, pkg ):
+	args.EXIT = 1
+
+#======================================================================
+#======================================================================
+#======================================================================
+
+parser = argparse.ArgumentParser()
+parser.add_argument( '-a', '--all', action='store_true',  help='also consider unmaintained labels' )
+
+subparsers = parser.add_subparsers()
+
+# 'labels l' command
+sp = subparsers.add_parser( 'l', help='list known labels' )
+sp.add_argument( 'LABEL', nargs='*', default=['*'], help='labels to process (default: %(default)s)' )
+sp.set_defaults( func=lCMD )
+
+# 'labels la' command
+sp = subparsers.add_parser( 'la', help='short for (--all l)' )
+sp.add_argument( 'LABEL', nargs='*', default=['*'], help='labels to process (default: %(default)s)' )
+sp.set_defaults( func=laCMD )
+
+# 'config cnf' command
+sp = subparsers.add_parser( 'cnf', help='show label configuration' )
+sp.add_argument( 'LABEL', nargs='*', default=['*'], help='labels to process (default: %(default)s)' )
+sp.set_defaults( func=cnfCMD )
+
+# 'check chk' command
+sp = subparsers.add_parser( 'chk', help='check label status' )
+sp.add_argument( '-v', '--verbose', action='store_true', help='verbose listing of differences' )
+sp.add_argument( 'LABEL', nargs='?', default='head', help='label to process (default: %(default)s)' )
+sp.add_argument( 'PKGS', nargs='*', help='packages to check (default: core packages)' )
+sp.set_defaults( func=chkCMD )
+
+# parse the args and call whatever function was selected
+if len(sys.argv) == 1 or ( len(sys.argv) == 2 and sys.argv[1][0] == '-' ):
+  sys.argv.append( 'cnf' )
+
+args = parser.parse_args()
+args.EXIT = 0	# exit code
+
+zciconf.kAllLabels = args.all
+
+try:
+  args.func( args )
+except cout.Error:
+  args.EXIT = 42
+exit( args.EXIT )
