@@ -1,0 +1,6 @@
+#! /bin/bash
+set -e
+cd ~/zypp-ci-utils	|| exit 1
+test -d .git		|| exit 1
+git config user.email "CI@$Z_HOST"
+git config user.name  "$Z_HOST CI"
