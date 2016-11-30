@@ -1,0 +1,35 @@
+#! /usr/bin/python
+#======================================================================
+from zciconf import osc
+from zciconf import cout
+#======================================================================
+osc.cmd._dbg = False
+
+def dump( pkg ):
+  if not pkg:
+    cout.ERR( 'invalid package', pkg, 'in project', pkg.prj )
+  else:
+    #cout.wlBLU( pkg.vstr )
+    outs = '\t%-30s' % ( pkg.nvr )
+    if pkg.link: outs += ' %s' % str(pkg.link)
+    cout.wlBLU( outs )
+    #for l in pkg.content:
+      #print ' ', l.vstr
+
+def check( osc, *args ):
+  for arg in args:
+    prj = osc.prj( arg )
+    cout.wlGRE( prj )
+    for pkgn in ('zypper', 'libzypp', 'libsolv', 'libzypp-bindings', 'libzypp-testsuite-tools', 'zypp-plugin'):
+      pkg = prj.pkg( pkgn )
+      dump( pkg )
+
+check( osc.Obs(),
+      'zypp:Head',
+      'zypp:SLE-12-SP2-Branch',
+      'zypp:SLE-12-SP1-Branch',	'zypp:Code42_1-Branch',
+      'zypp:SLE-12-Branch',	'zypp:Code13_2-Branch',
+      )
+
+cout.wlBLU( "======================================================================" )
+check( osc.Ibs(), 'Devel:zypp:SLE12SP2', 'Devel:zypp:SLE12SP1', 'Devel:zypp:SLE12' )

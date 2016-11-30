@@ -1,0 +1,102 @@
+  SuSE-Code-11-Branch
+  SuSE-Code-11_2-Branch
+  SuSE-Code-11_3-Branch
+  SuSE-Code-11_4-Branch
+  SuSE-Code-12_1-Branch
+  SuSE-Code-12_2-Branch
+  SuSE-Code-12_3-Branch
+  SuSE-Code-13_1-Branch
+  SuSE-Linux-10_3-Branch
+  SuSE-Linux-11_0-Branch
+  SuSE-SLE-10-SP2-Branch
+  SuSE-SLE-10-SP3-Branch
+  SuSE-SLE-11-SP2-Branch
+  SuSE-SLE-11-SP3-Branch
+  SuSE-SLE-12-Branch
+
+
+ node-zyppHEAD		10.162.166.22	node-zypp node-zyppHEAD node-zypp-HEAD
+node-zypp13.1		10.162.166.21	node-zypp node-zypp13.1
+
+ node-zypp-SLE12SP1	10.162.166.9	node-zypp node-zypp-SLE12SP1
+ node-zypp-SLE12		10.162.166.71	node-zypp node-zypp-SLE12
+
+node-zyppSLE11SP3	10.162.166.19	node-zypp node-zyppSLE11SP3
+node-zyppSLE11SP2	app6.suse.de	node-zypp node-zyppSLE11SP2
+node-zypp-11.2		app2.suse.de	node-zypp
+
+node-zypp-i18n		10.162.166.47	node-zypp-i18n node-zypp
+
+
+
+
+PRJ:
+   head		osc   zypp:Head                 -(sr)-> openSUSE:Factory
+
+   leap		osc   zypp:Head                 -(mr)-> openSUSE:Leap:42.1:Update
+                osc   zypp:Code42_1-Branch
+   c13.2	osc   zypp:Code13_2-Branch      -(mr)-> openSUSE:13.2:Update
+   c13.1	osc   zypp:Code13_1-Branch	-(mr)-> openSUSE:13.1:Update
+x  c12.3	osc   zypp:Code12_3-Branch	-(mr)-> openSUSE:12.3:Update
+x  c12.2	osc   zypp:Code12_2-Branch	-(mr)-> openSUSE:12.2:Update
+x  c12.1	osc   zypp:Code12_1-Branch	-(mr)-> openSUSE:12.1:Update
+
+   s12sp1	isc   Devel:zypp:SLE12SP1       -(sr)-> SUSE:SLE-12-SP1:GA
+   s12		isc   Devel:zypp:SLE12          -(mr)-> SUSE:SLE-12:Update
+
+   s11sp4	isc   Devel:zypp:SLE11SP4       -(sr)-> SUSE:SLE-11-SP4:Update
+		osc   zypp:SLE-11-SP4-Branch
+		osc   zypp:SLE-11-SP3-Branch
+
+   s11sp3	isc   Devel:zypp:SLE11SP3       -(sr)-> SUSE:SLE-11-SP3:Update:Test
+		osc   zypp:SLE-11-SP3-Branch
+		J     node-zyppSLE11SP3
+
+
+   s10sp4	isc   Devel:zypp:SLE10-SP4      -(sr)-> SUSE:SLE-10-SP4:Update:Test
+
+
+
+
+		osc zypp:Head			-(sr)-> openSUSE:Factory
+master		J node-zypp-HEAD
+
+		osc zypp:Code42_1-Branch	-(mr)-> openSUSE:Leap:42.1:Update
+		osc zypp:Head
+
+
+		isc Devel:zypp:SLE12SP1		-(sr)-> SUSE:SLE-12-SP1:GA
+		osc zypp:SLE-12-SP1-Branch
+master		J node-zypp-SLE12SP1
+
+
+
+
+
+
+
+master			J node-zypp-HEAD	osc zypp:Head			-(sr)-> openSUSE:Factory
+
+						osc zypp:Code42_1-Branch	-(mr)-> openSUSE:Leap:42.1:Update
+
+master			J node-zypp-SLE12SP1	osc zypp:SLE-12-SP1-Branch
+						isc Devel:zypp:SLE12SP1		-(sr)-> SUSE:SLE-12-SP1:GA
+
+
+SuSE-SLE-12-Branch	J node-zypp-SLE12	osc zypp:SLE-12-Branch
+						isc Devel:zypp:SLE12		-(mr)-> SUSE:SLE-12:Update
+
+						osc zypp:Code13_2-Branch	-(mr)-> openSUSE:13.2:Update
+
+SuSE-Code-13_1-Branch	J node-zypp13.1		osc zypp:Code13_1-Branch	-(mr)-> openSUSE:13.1:Update
+
+-----
+
+SuSE-SLE-11-SP2-Branch	J node-zyppSLE11SP2	osc zypp:SLE-11-SP2-Branch
+						isc Devel:zypp:SLE11SP3		-(sr)-> SUSE:SLE-11-SP4:Update:Test
+
+SuSE-SLE-11-SP3-Branch	J node-zyppSLE11SP3	osc zypp:SLE-11-SP3-Branch
+						isc Devel:zypp:SLE11SP3		-(sr)-> SUSE:SLE-11-SP3:Update:Test
+
+						osc zypp:SLE-11-SP4-Branch
+						isc Devel:zypp:SLE11SP4		-(sr)-> SUSE:SLE-11-SP4:Update:Test

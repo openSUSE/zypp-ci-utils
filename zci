@@ -5,7 +5,7 @@ import argparse
 import difflib
 import zciconf
 from zciconf import cout
-from sets import Set
+#from sets import Set
 #======================================================================
 
 def DBG( *args ): cout.ewBLU( 'zci:', *args )
@@ -15,34 +15,8 @@ def ERR( *args ): cout.ewRED( 'zci:', *args )
 
 #======================================================================
 
-def args2labels( args ):	# args.LABEL list of globs -> list of Labels
-  labels = Set()
-  globs = args.LABEL if type(args.LABEL) is list else [ args.LABEL ]
-  for glob in globs:
-    gotcha = False
-    for l in zciconf.labels( glob ):
-      labels.add( l )
-      if not gotcha: gotcha = True
-    if not gotcha:
-      ERR( 'no label matching \'' , glob, '\'' )
-      args.EXIT = 2
-  return sorted( labels )
-
-def args2label( args ):		# args.LABEL one glob -> one Label
-  label = None
-  labels = args2labels( args )
-  if labels:
-    if len(labels) == 1:
-      label = labels.pop()
-    else:
-      ERR( 'multiple labels  matching \'' , args.LABEL, '\': ', labels )
-      args.EXIT = 2
-  return label
-
-#======================================================================
-
 def lCMD( args ):
-  labels = args2labels( args )
+  labels = zciconf.args2labels( args )
   for l in labels:
     print l
 
@@ -55,11 +29,11 @@ def laCMD( args ):
 #======================================================================
 
 def cnfCMD( args ):
-  labels = args2labels( args )
+  labels = zciconf.args2labels( args )
   if labels:
     print 'Configuration of %s:' % zciconf.whichLabels()
     for l in labels:
-      print '%s %-10s %s' % ( ' ' if l.isMaintained else '#', l, zciconf.develPrj( l ) )
+      print '%s %-10s %s' % ( ' ' if l.maintained else '#', l, zciconf.develPrj( l ) )
 
 #======================================================================
 
@@ -70,21 +44,21 @@ def diffChanges( src, trg ):
   for line in src.cat(): sc.append( line )
   for line in trg.cat(): tc.append( line )
   for line in difflib.unified_diff( tc, sc, n=0 ):
-      if line[0] == '@':
-	cout.wCYA( line )
-      elif line[0] == '+' and line[0:2] != '++':
-	cout.wlGRE( line )
-      elif line[0] == '-' and line[0:2] != '--':
-	cout.wlRED( line )
+    if line[0] == '@':
+      cout.wCYA( line )
+    elif line[0] == '+' and line[0:2] != '++':
+      cout.wlGRE( line )
+    elif line[0] == '-' and line[0:2] != '--':
+      cout.wlRED( line )
 
 def diffFile( src, trg ):
   """Test whether two osc.Files differ and print the result."""
   diff = ( src != trg )
   if diff:
     if src.name != trg.name:
-      print '%s (%s)' % ( cout.sRED(src.vstr), cout.sBLU(trg.name) )
+      print '%-100s (%s)' % ( cout.sRED(src.vstr), cout.sBLU(trg.name) )
     else:
-      cout.wlRED( src.vstr )
+      print '%-100s (%s)' % ( cout.sRED(src.vstr), cout.sBLU(trg.mtimestr) )
   else:
     cout.wlBLU( src.vstr )
   return diff
@@ -109,7 +83,7 @@ def diffPkg( args, request, pkg ):
 
 
 def chkCMD( args ):
-  label = args2label( args )
+  label = zciconf.args2label( args )
   if label:
     develPrj = zciconf.develPrj( label )
     pkgs = args.PKGS if args.PKGS else develPrj.corePkgs
@@ -121,7 +95,7 @@ def chkCMD( args ):
 #======================================================================
 #======================================================================
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser( description='Maintain zypp branches and submissions.' )
 parser.add_argument( '-a', '--all', action='store_true',  help='also consider unmaintained labels' )
 
 subparsers = parser.add_subparsers()

@@ -1,7 +1,7 @@
 #======================================================================
 import osc
-from label import Label
-from develprj import DevelPrj
+from collections import OrderedDict
+from zcitypes import *
 #======================================================================
 
 # build services
@@ -18,14 +18,34 @@ zmd  = [ 'libzypp', 'zypper', 'zypp-zmd-backend' ]
 # the Labels
 labels = []
 
-# the DevelPrjs
+# the Configs
+configs = {}
+
+
 develprjs = {}
 
+osc.cmd._dbg = True
+
+
+
+class Lx( Label ):
+
+  def __init__( self, name ):
+    super( self, name )
+
 #======================================================================
-def _cfg( name, osc, rq, srcPrj, trgPrj, corePkgs ):
-  l = Label(name)
+def _cfg( name, bs, rq, srcPrj, trgPrj, corePkgs ):
+  l = Label.define( name )
+
+  develprjs[l] = DevelPrj( bs, rq, srcPrj, trgPrj, corePkgs )
+  #configs[l] = LabelConfig( bs, trgPrj, srcPrj,
+
   labels.append( l )
-  develprjs[l] = DevelPrj( osc, rq, srcPrj, trgPrj, corePkgs )
+
+
+  #raise cout.Error( '===STOP===' )
+
+
 #======================================================================
 
 _cfg(	'head',		obs,	'sr',	'zypp:Head',		'openSUSE:Factory',		solv	),
@@ -41,7 +61,8 @@ _cfg(	'#c12.1',	obs,	'mr',	'zypp:Code12_1-Branch',	'openSUSE:12.1:Update',		solv
 #_cfg(	'#c11.2',	obs,	'sr',	'zypp:Code11_2-Branch',	'openSUSE:11.2:Update',		sat	),
 #_cfg(	'#c11',		obs,	'sr',	'zypp:Code11-Branch',	'openSUSE:11.1:Update',		sat	),
 
-_cfg(	's12sp1',	ibs,	'sr',	'Devel:zypp:SLE12SP1',	'SUSE:SLE-12-SP1:GA',		solv	),
+_cfg(	's12sp2',	ibs,	'sr',	'Devel:zypp:SLE12SP2',	'SUSE:SLE-12-SP2:GA',		solv	),
+_cfg(	's12sp1',	ibs,	'mr',	'Devel:zypp:SLE12SP1',	'SUSE:SLE-12-SP1:Update',	solv	),
 _cfg(	's12',		ibs,	'mr',	'Devel:zypp:SLE12',	'SUSE:SLE-12:Update',		solv	),
 
 _cfg(	's11sp4',	ibs,	'sr',	'Devel:zypp:SLE11SP4',	'SUSE:SLE-11-SP4:Update',	sat	),
