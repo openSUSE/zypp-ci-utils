@@ -1,0 +1,80 @@
+
+Prepare CI-HOST for zypp-LABEL
+==============================
+cloud.suse.de project zypp
+
+LABEL is a distrotag like: head, s12, s12sp1, c13.2, c42.1, ...
+
+# ssh to CIHOST
+ssh-copy-id root@CIHOST
+ssh root@CIHOST
+
+  # checkout zypp-ci-utils
+  git clone https://github.com/openSUSE/zypp-ci-utils.git
+  cd zypp-ci-utils/
+
+  # prepare host for zypp-LABEL
+  [rm -f ~/zypp-ci-label]
+  ./hostsetup [zypp-LABEL]
+
+  # Adjust the installed package set
+
+  # If needed, install credentials in ~/.ssh
+  #  - obs submission
+  #  - publishing online documentation
+
+
+Jenkins nodes
+=============
+Name:	zypp-node-NN
+Label:	zypp-node zypp-LABEL
+
+10.162.162.106	zypp-node-01	zypp-node
+10.162.162.107	zypp-node-02	zypp-node
+10.162.162.108	zypp-node-03	zypp-node
+10.162.162.109	zypp-node-04	zypp-node
+10.162.162.110	zypp-node-05	zypp-node
+10.162.162.111	zypp-node-06	zypp-node zypp-head
+10.162.162.112	zypp-node-07	zypp-node zypp-s11sp3
+10.162.162.113	zypp-node-08	zypp-node zypp-s12
+10.162.162.116	zypp-node-09	zypp-node zypp-s12sp1
+10.162.162.117	zypp-node-10	zypp-node zypp-s12sp2
+
+Create Jenkins job folder zypp/LABEL (e.g. copy from zypp/LABEL)
+and configure it for building the appropriate git branch on node
+zypp-LABEL. The default obs project for LABEL should be configured
+in ci-progile.sh.
+
+EMail notifications about failed builds to zypp-commit@opensuse.org.
+
+
+Jenkins Job Names		OBS Package Submission
+--------------------------------------------------------
+10-libsolv			(delayed)
+20-libzypp			(delayed)
+30-zypper			(delayed)
+40-submitt-stack		libsolv libzypp zypper
+510-libzypp-bindings		libzypp-bindings
+520-libzypp-testsuite-tools	libzypp-testsuite-tools
+90-libzypp-online-doc		(publish libzypp online docs)
+
+Plugins (head only)
+-------------------
+zypp-plugin			zyppp:head / zypp-plugin
+zypp-plugin-spacewalk		systemsmanagement:spacewalk / zypp-plugin-spacewalk
+
+
+
+Deploy Keys for pushing nodes
+=============================
+https://gist.github.com/victorborda/2871029
+E.g. for node-zypp-i18n pushing back translations to git
+
+
+GIT TAGS for new branches
+=========================
+NB=SuSE-SLE-12-Branch
+BC=<commit>
+git tag -m BASE-$NB BASE-$NB <commit>
+git branch $NB BASE-$NB
+git-publish-branch $NB

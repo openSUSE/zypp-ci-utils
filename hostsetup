@@ -1,0 +1,73 @@
+#! /bin/bash
+set -x
+set -e
+. ./bin/ascii_art
+
+# May set zypp-LABEL if ~/zypp-ci-label does not exist (otherwise change manually)
+test -n "$1" && {
+  echo "$1" >~/zypp-ci-label					|| ascii_bad
+  chmod 444 ~/zypp-ci-label					|| ascii_bad
+}
+test -f ~/zypp-ci-label						|| ascii_bad
+head -n 1 ~/zypp-ci-label | grep -q '^zypp-[a-z0-9._-]\+$'	|| ascii_bad
+
+# Setup some rc and config files..
+for C in hostsetup.d/*; do
+  . $C || ascii_bad
+done
+
+# Repos and packages are usually setup only once.
+# Omit them if Jenkins is already working...
+test -d ~/hudson/workspace || {
+  DEVELPKGS="augeas-devel"
+  DEVELPKGS="$DEVELPKGS boost-devel"
+  DEVELPKGS="$DEVELPKGS cmake curl-devel"
+  DEVELPKGS="$DEVELPKGS db-devel dejagnu doxygen"
+  DEVELPKGS="$DEVELPKGS expat expat-devel"
+  DEVELPKGS="$DEVELPKGS fdupes"
+  DEVELPKGS="$DEVELPKGS gcc-c++ gettext-devel glib2-devel graphviz"
+  DEVELPKGS="$DEVELPKGS hal-devel"
+  DEVELPKGS="$DEVELPKGS icecream"
+  DEVELPKGS="$DEVELPKGS libcurl-devel libexpat-devel libproxy-devel librpm-devel libxml2-devel"
+  DEVELPKGS="$DEVELPKGS ntp"
+  DEVELPKGS="$DEVELPKGS openssl-devel osc"
+  DEVELPKGS="$DEVELPKGS perl-devel pkg-config popt-devel python-devel"
+  DEVELPKGS="$DEVELPKGS readline-devel rpm-devel ruby-devel"
+  DEVELPKGS="$DEVELPKGS swig"
+  DEVELPKGS="$DEVELPKGS zlib-devel"
+
+  # Prepare the repos
+  rm /etc/zypp/repos.d/*
+  case "$Z_LABEL" in
+    head)
+      zypper ar -f	http://download.opensuse.org/tumbleweed/repo/oss/			tw-oss
+      zypper ar -f	http://download.opensuse.org/tumbleweed/repo/non-oss/			tw-non-oss
+      ;;
+    s12sp2)
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP2-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP2-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
+      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP2:/Update/standard/x86_64/	$Z_LABEL-UPD
+      ;;
+    s12sp1)
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP1-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP1-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
+      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP1:/Update/standard/x86_64/	$Z_LABEL-UPD
+      ;;
+    s12)
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SDK-LATEST/x86_64/DVD1		$Z_LABEL-SDK
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
+      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/Update/standard/x86_64/		$Z_LABEL-UPD
+      ;;
+    s11sp3)
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-11-SP4-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
+      zypper ar -f	http://dist.suse.de/install/SLP/SLES-11-SP4-LATEST/x86_64/DVD1		$Z_LABEL-SLE
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-11-SP4:/Update/standard/		$Z_LABEL-UPD
+      ;;
+  esac
+  zypper lr -u
+  zypper --gpg-auto-import-keys ref -f
+  zypper in $DEVELPKGS
+}
+
+ascii_good
+exit 0

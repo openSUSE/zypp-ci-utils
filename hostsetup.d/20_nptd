@@ -1,0 +1,10 @@
+#! /bin/bash
+set -e
+
+MYNTPSETVER="server de.pool.ntp.org iburst"
+
+grep "$MYNTPSETVER" /etc/ntp.conf || {
+  echo -e "\n$MYNTPSETVER" >>/etc/ntp.conf
+}
+
+systemctl enable ntpd || true

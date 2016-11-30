@@ -1,0 +1,9 @@
+#! /bin/bash
+set -e
+cat <<EOF >/etc/motd
+Have a lot of fun...
+
+        $Z_HOST
+        (ma@suse.de)
+
+EOF
