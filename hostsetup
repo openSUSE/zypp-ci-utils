@@ -37,7 +37,7 @@ test -d ~/hudson/workspace || {
   DEVELPKGS="$DEVELPKGS zlib-devel"
 
   # Prepare the repos
-  rm /etc/zypp/repos.d/*
+  rm -f /etc/zypp/repos.d/*
   case "$Z_LABEL" in
     head)
       zypper ar -f	http://download.opensuse.org/tumbleweed/repo/oss/			tw-oss
