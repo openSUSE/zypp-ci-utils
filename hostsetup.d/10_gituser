@@ -5,3 +5,25 @@ test -d .git		|| exit 1
 git config user.email "CI@$Z_HOST"
 git config user.name  "$Z_HOST CI"
 git config branch.autosetuprebase always
+
+cat <<'EOF' >~/.gitconfig
+[color]
+        ui = auto
+        diff = auto
+        status = auto
+        branch = auto
+[log]
+        decorate = true
+[branch]
+        autosetuprebase = always
+[core]
+        whitespace = trailing-space,space-before-tab
+[apply]
+        whitespace = fix
+[push]
+        default = current
+[rebase]
+        autosquash = true
+[color "decorate"]
+        tag = magenta
+EOF
