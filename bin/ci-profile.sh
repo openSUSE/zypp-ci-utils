@@ -456,9 +456,9 @@ function ci_libzypp_online_doc()
     mv "$HTMLDOC" "$SYNCDIR/$PROJECT/$Z_DOC_PROJECT"
 
     SSHPARAMS=" -i $HOME/.ssh/docssh-id_rsa -p2206 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
-    rsync -e "ssh $SSHPARAMS" -dvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT"                jdsn@community.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects
-    rsync -e "ssh $SSHPARAMS" -dvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT/$Z_DOC_PROJECT" jdsn@community.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects/"$PROJECT"
-    rsync -e "ssh $SSHPARAMS" -rvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT/$Z_DOC_PROJECT" jdsn@community.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects/"$PROJECT"
+    rsync -e "ssh $SSHPARAMS" -dvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT"                jdsn@gate.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects
+    rsync -e "ssh $SSHPARAMS" -dvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT/$Z_DOC_PROJECT" jdsn@gate.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects/"$PROJECT"
+    rsync -e "ssh $SSHPARAMS" -rvlt --delete --no-p --no-g --chmod=ug+rw "$SYNCDIR/$PROJECT/$Z_DOC_PROJECT" jdsn@gate.opensuse.org:/home/jdsn/rtfm.opensuse.org/htdocs/projects/"$PROJECT"
   else
     error_exit "No html autodoc found to be synced to documentation site"
   fi
