@@ -78,3 +78,18 @@ BC=<commit>
 git tag -m BASE-$NB BASE-$NB <commit>
 git branch $NB BASE-$NB
 git-publish-branch $NB
+
+
+OBS/IBS Projects
+================
+Initially the packages are linked from obs://zypp:Head into the OBD maintenence project.
+Later a dedicated ci-host may submitt into this maintenence project:
+
+OBS:	zypp:SLE-@@-Branch	(SLE-@@ maintenance)
+	(osc linkpac zypp:Head SOURCEPAC zypp:SLE-@@-Branch)
+
+For building SLE the complete OBS project is linked into IBS and built there:
+
+IBS:	Devel:zypp:SLE@@	(Build link to obs://zypp:SLE-@@-Branch)
+	(in Advanced/Meta: <link project="openSUSE.org:zypp:SLE-@@-Branch"/>
+			   <repository ...  linkedbuild="all">)
