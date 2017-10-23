@@ -1,0 +1,227 @@
+#! /usr/bin/python
+
+import sys, os, time, random
+from PyQt4 import QtCore
+from PyQt4.QtCore import *
+from PyQt4 import QtGui
+from PyQt4.QtGui import *
+
+from zosc import *
+
+#======================================================================
+
+rootPrj = "zypp"
+
+subPrjs = (
+  "Head",
+  "SLE-15-Branch",
+  "SLE-12-SP3-Branch", "SLE-12-SP2-Branch", "SLE-12-SP1-Branch", "SLE-12-Branch",
+  )
+
+defPkgs = [
+  "libsolv",
+  "libzypp",
+  "zypper",
+  "libzypp-bindings",
+  "libzypp-testsuite-tools",
+  ]
+
+colors = (
+  QColor( 255, 000, 000 ),	# R
+  QColor( 255, 127, 000 ),	# 0
+  QColor( 255, 255, 000 ),	# Y
+  QColor( 000, 255, 000 ),	# G
+  QColor( 000, 000, 255 ),	# B
+  QColor( 075, 000, 130 ),	# I
+  QColor( 148, 000, 221 ),	# V
+  )
+
+#======================================================================
+
+
+def color( prj ):
+  try:
+    return colors[subPrjs.index( prj ) % len(colors)]
+  except ValueError:
+    return QColor( 255, 255, 255 )
+
+
+def luminance( color ):
+  return 0.2126*color.red() + 0.7152*color.green() + 0.0722*color.blue()
+
+
+def textPalette( bprj ):
+  c = color( bprj ).lighter()
+  p = QPalette( c )
+  if luminance( c ) < 128:
+    p.setColor( QPalette.Foreground, QColor( 255, 255, 255 ) )
+  return p
+
+
+def palette( bprj, fprj = None ):
+  #if not fprj: fprj = bprj
+  p = QPalette( color( bprj ) )
+  if ( fprj ):
+    p.setColor( QPalette.Foreground, color( fprj ).darker( 150 ) )
+  return p
+
+#======================================================================
+class ZPkgData( QLabel ):
+
+  def __init__( self ):
+    QLabel.__init__( self )
+    self.defPalette = self.palette()
+
+  def setData( self, pkg ):
+    data = []
+    if pkg.isLink():
+      d = [ '# ->' ]
+      d.append( self._smartPrjName( pkg.linkPrjName() ) )
+      if pkg.linkPkgName() != pkg.name() or pkg.linkPkgVersion() != '(latest)':
+	d.append( pkg.linkPkgName() )
+	d.append( pkg.linkPkgVersion() )
+      data.append( " ".join( d ) )
+    data.append( pkg.version() )
+
+    self.setText( "\n".join( data ) )
+    self.setAutoFillBackground( False )
+    self.setPalette( self.defPalette )
+    self.pkg = pkg
+
+
+  def setBG( self, vprj ):
+    if self.pkg.isLink():
+      bprj = self._smartPrjName( self.pkg.linkPrjName() )
+      self.setPalette( palette( bprj, vprj ) )
+    else:
+      bprj = self._smartPrjName( self.pkg.prj().name() )
+      if bprj == vprj:
+	self.setPalette( textPalette( bprj ) )
+	self.setAutoFillBackground( True )
+      else:
+	self.setPalette( palette( bprj, vprj ) )
+
+  def _smartPrjName( self, name ):
+    if name.index( rootPrj + ":" ) == 0:
+      name = name[len(rootPrj)+1:]
+    return name
+
+#======================================================================
+class WStatsTable( QFrame ):
+
+  def __init__( self ):
+    QFrame.__init__( self )
+    self.setFrameStyle( QFrame.Box )
+
+    self.grid = QGridLayout()
+    self.grid.setSpacing( 3 )
+    self.setLayout( self.grid );
+
+
+  def load( self ):
+    if not self.grid.itemAtPosition( 0, 0 ):
+      self._addColumnHeader( 0, "obs://" + rootPrj + ":" )
+      c = 1
+      for prj in subPrjs:
+	self._addColumnHeader( c, prj )
+	c += 1
+      r = 1
+      for name in defPkgs:
+	self._addRowHeader( r, name )
+	r += 1
+      qApp.processEvents();
+
+    # pass1 - load prj data (head first, rest reverse; this way links should be resolvable)
+    self._vmap = {}
+    self._loadPrj( 1, subPrjs[0] )
+    c = len( subPrjs )
+    for prj in subPrjs[:0:-1]:
+      self._loadPrj( c, prj )
+      c -= 1
+
+    # pass2 - inter prj relations (links, augmented branches)
+    # need it?
+
+
+  def _addColumnHeader( self, c, name ):
+    if not self.grid.itemAtPosition( 0, c ):
+      w = QLabel( name )
+      w.setFrameStyle( QFrame.Panel | QFrame.Raised )
+      w.setAutoFillBackground( True )
+      w.setPalette( textPalette( name ) )
+      self.grid.addWidget( w, 0, c )
+      self.grid.setColumnStretch( c, 1 )
+
+
+  def _addRowHeader( self, r, name ):
+    if not self.grid.itemAtPosition( r, 0 ):
+      w = QLabel( name )
+      w.setFrameStyle( QFrame.Box | QFrame.Raised )
+      self.grid.addWidget( w, r, 0 )
+      self.grid.setRowStretch( r, 1 )
+
+
+  def _setPkgWidget( self, pkg, c ):
+    try:
+      r = defPkgs.index( pkg.name() ) + 1
+    except ValueError:
+      defPkgs.append( pkg.name() )
+      r = len( defPkgs )
+      self._addRowHeader( r, pkg.name() )
+
+    w = self.grid.itemAtPosition( r, c )
+    if not w:
+      w = ZPkgData()
+      w.setFrameStyle( QFrame.Box | QFrame.Raised )
+      w.setLineWidth( 2 )
+      self.grid.addWidget( w, r, c )
+
+    return w
+
+
+  def _loadPrj( self, c, prj ):
+    for pkg in Obs.prj( "%s:%s" % ( rootPrj, prj ) ).ls():
+      w = self._setPkgWidget( pkg, c )
+      w.setData( pkg )
+
+      if not self._vmap.has_key( pkg.name() ):
+	self._vmap[pkg.name()] = {}
+
+      if self._vmap[pkg.name()].has_key( pkg.version() ):
+	vprj = self._vmap[pkg.name()][pkg.version()]
+      else:
+	vprj = self._vmap[pkg.name()][pkg.version()] = prj
+      w.setBG( vprj )
+
+      qApp.processEvents();
+
+#======================================================================
+class WMainWindow( QMainWindow ):
+
+  def __init__( self, argv ):
+    QMainWindow.__init__( self )
+    self.setFocus()
+    self.wStatsTable = WStatsTable()
+    self.setCentralWidget( self.wStatsTable )
+
+#======================================================================
+def main():
+  app = QApplication( sys.argv )
+  app.lastWindowClosed.connect( app.quit )
+  appname = os.path.basename( sys.argv[0] )
+
+  main = WMainWindow( sys.argv[1:] )
+  main.setWindowFlags( Qt.Window | Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint )
+  main.setWindowTitle( appname )
+  main.setWindowIconText( appname )
+  main.setGeometry( 64, 64, 0, 0 )
+  main.show()
+
+  main.centralWidget().load()
+
+  sys.exit( app.exec_() )
+
+if __name__ == '__main__':
+  main()
+
+
