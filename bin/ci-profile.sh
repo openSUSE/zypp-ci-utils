@@ -42,6 +42,11 @@ case "$Z_LABEL" in
       Z_DOC_PROJECT="${Z_DOC_PROJECT:-HEAD}"
       ;;
 
+    s15)
+      Z_OBS_PROJECT="${Z_OBS_PROJECT:-zypp:SLE-15-Branch}"
+      Z_DOC_PROJECT="${Z_DOC_PROJECT:-SLE15}"
+      ;;
+
     s12sp3)
       Z_OBS_PROJECT="${Z_OBS_PROJECT:-zypp:SLE-12-SP3-Branch}"
       Z_DOC_PROJECT="${Z_DOC_PROJECT:-SLE12SP3}"

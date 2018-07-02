@@ -43,6 +43,11 @@ test -d ~/hudson/workspace || {
       zypper ar -f	http://download.opensuse.org/tumbleweed/repo/oss/			tw-oss
       zypper ar -f	http://download.opensuse.org/tumbleweed/repo/non-oss/			tw-non-oss
       ;;
+    s15)
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-15-Module-Development-Tools-LATEST/x86_64/DVD1	$Z_LABEL-SDK
+      zypper ar -f	http://dist.suse.de/install/SLP/SLE-15-Module-Basesystem-LATEST/x86_64/DVD1		$Z_LABEL-SLE
+      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/Update/standard/x86_64/		$Z_LABEL-UPD
+      ;;
     s12sp3)
       zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP3-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
       zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP3-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
