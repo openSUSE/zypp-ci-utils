@@ -44,34 +44,28 @@ test -d ~/hudson/workspace || {
       zypper ar -f	http://download.opensuse.org/tumbleweed/repo/non-oss/			tw-non-oss
       ;;
     s15)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-15-Module-Development-Tools-LATEST/x86_64/DVD1	$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-15-Module-Basesystem-LATEST/x86_64/DVD1		$Z_LABEL-SLE
-      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/Update/standard/x86_64/		$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-15:/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-15:/Update/standard/			$Z_LABEL-UPD
       ;;
     s12sp3)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP3-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP3-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
-      zypper ar -f -d	http://dist.suse.de/ibs/SUSE:/SLE-12-SP3:/Update/standard/x86_64/	$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP3:/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP3:/Update/standard/		$Z_LABEL-UPD
       ;;
     s12sp2)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP2-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP2-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
-      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP2:/Update/standard/x86_64/	$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP2:/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP2:/Update/standard/		$Z_LABEL-UPD
       ;;
     s12sp1)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP1-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SP1-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
-      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP1:/Update/standard/x86_64/	$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP1:/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12-SP1:/Update/standard/		$Z_LABEL-UPD
       ;;
     s12)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-SDK-LATEST/x86_64/DVD1		$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-12-Server-LATEST/x86_64/DVD1	$Z_LABEL-SLE
-      #zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/Update/standard/x86_64/		$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-12:/Update/standard/			$Z_LABEL-UPD
       ;;
     s11sp3)
-      zypper ar -f	http://dist.suse.de/install/SLP/SLE-11-SP4-SDK-LATEST/x86_64/DVD1	$Z_LABEL-SDK
-      zypper ar -f	http://dist.suse.de/install/SLP/SLES-11-SP4-LATEST/x86_64/DVD1		$Z_LABEL-SLE
-      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-11-SP4:/Update/standard/		$Z_LABEL-UPD
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-11-SP4::/GA/standard/			$Z_LABEL-GA
+      zypper ar -f	http://dist.suse.de/ibs/SUSE:/SLE-11-SP4::/Update/standard/		$Z_LABEL-UPD
       ;;
   esac
   zypper lr -u
