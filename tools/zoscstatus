@@ -13,57 +13,58 @@ from zosc import *
 rootPrj = "zypp"
 
 subPrjs = (
-  "Head",
-  "SLE-15-Branch",
-  "SLE-12-SP3-Branch", "SLE-12-SP2-Branch", "SLE-12-SP1-Branch", "SLE-12-Branch",
-  )
+    "Head",
+    "SLE-15-Branch",
+    "SLE-12-SP3-Branch", "SLE-12-SP2-Branch", "SLE-12-SP1-Branch", "SLE-12-Branch",
+    #"SLE-11-SP3-Branch",
+    )
 
 defPkgs = [
-  "libsolv",
-  "libzypp",
-  "zypper",
-  "libzypp-bindings",
-  "libzypp-testsuite-tools",
-  ]
+    "libsolv",
+    "libzypp",
+    "zypper",
+    "libzypp-bindings",
+    "libzypp-testsuite-tools",
+    ]
 
 colors = (
-  QColor( 255, 000, 000 ),	# R
-  QColor( 255, 127, 000 ),	# 0
-  QColor( 255, 255, 000 ),	# Y
-  QColor( 000, 255, 000 ),	# G
-  QColor( 000, 000, 255 ),	# B
-  QColor( 075, 000, 130 ),	# I
-  QColor( 148, 000, 221 ),	# V
-  )
+    QColor( 255, 000, 000 ),    # R
+    QColor( 255, 127, 000 ),    # 0
+    QColor( 255, 255, 000 ),    # Y
+    QColor( 000, 255, 000 ),    # G
+    QColor( 000, 000, 255 ),    # B
+    QColor( 075, 000, 130 ),    # I
+    QColor( 148, 000, 221 ),    # V
+    )
 
 #======================================================================
 
 
 def color( prj ):
-  try:
-    return colors[subPrjs.index( prj ) % len(colors)]
-  except ValueError:
-    return QColor( 255, 255, 255 )
+    try:
+        return colors[subPrjs.index( prj ) % len(colors)]
+    except ValueError:
+        return QColor( 255, 255, 255 )
 
 
 def luminance( color ):
-  return 0.2126*color.red() + 0.7152*color.green() + 0.0722*color.blue()
+    return 0.2126*color.red() + 0.7152*color.green() + 0.0722*color.blue()
 
 
 def textPalette( bprj ):
-  c = color( bprj ).lighter()
-  p = QPalette( c )
-  if luminance( c ) < 128:
-    p.setColor( QPalette.Foreground, QColor( 255, 255, 255 ) )
-  return p
+    c = color( bprj ).lighter()
+    p = QPalette( c )
+    if luminance( c ) < 128:
+        p.setColor( QPalette.Foreground, QColor( 255, 255, 255 ) )
+    return p
 
 
 def palette( bprj, fprj = None ):
-  #if not fprj: fprj = bprj
-  p = QPalette( color( bprj ) )
-  if ( fprj ):
-    p.setColor( QPalette.Foreground, color( fprj ).darker( 150 ) )
-  return p
+    #if not fprj: fprj = bprj
+    p = QPalette( color( bprj ) )
+    if ( fprj ):
+        p.setColor( QPalette.Foreground, color( fprj ).darker( 150 ) )
+    return p
 
 #======================================================================
 class ZPkgData( QLabel ):
@@ -91,8 +92,11 @@ class ZPkgData( QLabel ):
 
   def setBG( self, vprj ):
     if self.pkg.isLink():
-      bprj = self._smartPrjName( self.pkg.linkPrjName() )
-      self.setPalette( palette( bprj, vprj ) )
+      #bprj = self._smartPrjName( self.pkg.linkPrjName() )
+      #self.setPalette( palette( bprj, vprj ) )
+      p = QPalette( self.defPalette )
+      p.setColor( QPalette.Foreground, color( self._smartPrjName( self.pkg.linkPrjName() ) ).darker( 150 ) )
+      self.setPalette( p )
     else:
       bprj = self._smartPrjName( self.pkg.prj().name() )
       if bprj == vprj:
