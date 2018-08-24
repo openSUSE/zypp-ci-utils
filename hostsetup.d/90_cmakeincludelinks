@@ -1,0 +1,7 @@
+#! /bin/bash
+set -e
+cd /usr/local/include/
+for D in solv zypp; do
+  test ! -d $D
+  ln -sf  /usr/include/$D/ .
+done
