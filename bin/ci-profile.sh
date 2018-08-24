@@ -129,6 +129,9 @@ function ci_build()
   msg "==> Building"
 
   cmake $CMAKEPARAS "$CHECKOUTDIR"
+  if [ "$1" == "clean" ]; then
+    make clean
+  fi
   make -j $MAKEJOBS
 
   popd
