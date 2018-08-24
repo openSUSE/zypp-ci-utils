@@ -1,23 +1,24 @@
 #! /bin/bash
 
-LABELS="head s15 s12sp3 s12sp2 s12sp1 s12 s11sp3"
+LABELS="${LABELS:-head s15 s12sp3 s12sp2 s12sp1 s12 s11sp3}"
 
 test -z "$1" && {
-  echo "Usage: allHosts SCRIPT"
+  echo "Usage: $(basename "$0") SCRIPT"
   echo "Execute SCRIPT (or command) on all CI hosts via ssh."
-  echo "Labels: $LABELS"
+  echo "LABELS='$LABELS'"
   exit 1
 }
 
 for L in $LABELS; do
-  HL="$(ssh root@h_$L cat zypp-ci-label)" || continue
+  SSH="ssh -x root@h_$L"
+  HL="$($SSH cat zypp-ci-label)" || continue
 
   Becho "=====[$L]\t================================================================================"
 
   if [ -f "$1" ]; then
     scp "$1" root@h_$L:allHostsScript
-    ssh root@h_$L L=$L ./allHostsScript
+    $SSH L=$L ./allHostsScript
   else
-    ssh root@h_$L "$@"
+    $SSH "$@"
   fi
 done
