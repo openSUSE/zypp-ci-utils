@@ -128,6 +128,11 @@ function ci_build()
   pushd "$BUILDDIR"
   msg "==> Building"
 
+  # cmake won't put headers found in /usr/include into the make depends.
+  test -e /usr/local/include/solv || ln -s /usr/include/solv/ /usr/local/include/solv
+  test -e /usr/local/include/zypp || ln -s /usr/include/zypp/ /usr/local/include/zypp
+  export CMAKE_PREFIX_PATH="/usr/local/include:/usr/include"
+
   cmake $CMAKEPARAS "$CHECKOUTDIR"
   if [ "$1" == "clean" ]; then
     make clean
