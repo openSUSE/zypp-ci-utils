@@ -14,7 +14,7 @@ rootPrj = "zypp"
 
 subPrjs = (
     "Head",
-    "SLE-15-Branch",
+    "SLE-15-SP1-Branch", "SLE-15-Branch",
     "SLE-12-SP3-Branch", "SLE-12-SP2-Branch", "SLE-12-SP1-Branch", "SLE-12-Branch",
     #"SLE-11-SP3-Branch",
     )
