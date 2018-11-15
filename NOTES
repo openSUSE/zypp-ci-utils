@@ -30,7 +30,7 @@ Name:	zypp-node-NN
 Label:	zypp-node zypp-LABEL
 
 10.162.162.106	zypp-node-01	zypp-node (zypp-s12sp3)
-10.162.162.107	zypp-node-02	zypp-node (zypp-s15)
+10.162.162.107	zypp-node-02	zypp-node zypp-s15sp1
 10.162.162.108	zypp-node-03	zypp-node
 10.162.162.109	zypp-node-04	zypp-node
 10.162.162.110	zypp-node-05	zypp-node
