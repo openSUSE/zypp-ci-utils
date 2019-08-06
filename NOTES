@@ -75,7 +75,7 @@ GIT TAGS for new branches
 =========================
 NB=SuSE-SLE-12-Branch
 BC=<commit>
-git tag -m BASE-$NB BASE-$NB <commit>
+git tag -m BASE-$NB BASE-$NB $BC
 git branch $NB BASE-$NB
 git-publish-branch $NB
 
