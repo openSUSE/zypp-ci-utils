@@ -29,16 +29,16 @@ Jenkins nodes
 Name:	zypp-node-NN
 Label:	zypp-node zypp-LABEL
 
-10.162.162.106	zypp-node-01	zypp-node (zypp-s12sp3)
-10.162.162.107	zypp-node-02	zypp-node zypp-s15sp1
-10.162.162.108	zypp-node-03	zypp-node
-10.162.162.109	zypp-node-04	zypp-node
-10.162.162.110	zypp-node-05	zypp-node
-10.162.162.111	zypp-node-06	zypp-node zypp-head
-10.162.162.112	zypp-node-07	zypp-node zypp-s11sp3
-10.162.162.113	zypp-node-08	zypp-node zypp-s12
-10.162.162.116	zypp-node-09	zypp-node zypp-s12sp1
-10.162.162.117	zypp-node-10	zypp-node zypp-s12sp2
+10.162.168.17	(zypp-node-01	zypp-node zypp-s12sp3)
+10.162.168.21	zypp-node-02	zypp-node zypp-s15sp1
+		zypp-node-03	zypp-node
+		zypp-node-04	zypp-node
+		zypp-node-05	zypp-node
+10.162.168.14	zypp-node-06	zypp-node zypp-head
+10.162.168.16	zypp-node-07	zypp-node zypp-s11sp3
+10.162.168.18	zypp-node-08	zypp-node zypp-s12
+10.162.168.26	zypp-node-09	zypp-node zypp-s12sp1
+10.162.168.13	zypp-node-10	zypp-node zypp-s12sp2
 
 Create Jenkins job folder zypp/LABEL (e.g. copy from zypp/LABEL)
 and configure it for building the appropriate git branch on node
