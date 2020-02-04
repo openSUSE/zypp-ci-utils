@@ -183,6 +183,7 @@ function ci_runtest()
       error_exit "No tests found!!"
     fi
     export BOOST_TEST_CATCH_SYSTEM_ERRORS=no
+    export CTEST_OUTPUT_ON_FAILURE=1
     make -j $MAKEJOBS
     make test
     popd
