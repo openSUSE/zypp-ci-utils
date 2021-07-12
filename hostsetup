@@ -32,8 +32,10 @@ test -d ~/hudson/workspace || {
   DEVELPKGS="$DEVELPKGS ntp"
   DEVELPKGS="$DEVELPKGS openssl-devel osc"
   DEVELPKGS="$DEVELPKGS perl-devel pkg-config popt-devel python-devel"
+  DEVELPKGS="$DEVELPKGS protobuf-devel"
   DEVELPKGS="$DEVELPKGS readline-devel rpm-devel ruby-devel"
   DEVELPKGS="$DEVELPKGS swig"
+  DEVELPKGS="$DEVELPKGS yaml-cpp-devel"
   DEVELPKGS="$DEVELPKGS zlib-devel"
 
   # Prepare the repos
