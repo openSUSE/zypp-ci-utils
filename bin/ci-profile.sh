@@ -133,6 +133,18 @@ function ci_build()
   test -e /usr/local/include/zypp || ln -s /usr/include/zypp/ /usr/local/include/zypp
   export CMAKE_PREFIX_PATH="/usr/local/include:/usr/include"
 
+  #
+  case "$Z_LABEL" in
+    head|s15*)
+	case "$JOB_BASE_NAME" in
+	  *-libzypp)
+	    CMAKEPARAS="$CMAKEPARAS -DENABLE_ZSTD_COMPRESSION=1"
+	    CMAKEPARAS="$CMAKEPARAS -DENABLE_ZCHUNK_COMPRESSION=1"
+	    ;;
+	esac
+        ;;
+  esac
+
   cmake $CMAKEPARAS "$CHECKOUTDIR"
   if [ "$1" == "clean" ]; then
     make clean
