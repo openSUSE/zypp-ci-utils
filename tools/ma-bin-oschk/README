@@ -1,0 +1,7 @@
+
+Backup/Source of internal OSC check and release scripts
+=======================================================
+
+For now, to avoid inconsistencies, scripts and configs are maintained
+in my bin/ dir. All scripts refer to this location. Team-mates should
+call ~ma/bin/{oscchk,oscsubmitt} directly or link to those scripts.

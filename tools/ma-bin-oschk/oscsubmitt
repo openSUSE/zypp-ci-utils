@@ -1,0 +1,118 @@
+#! /bin/bash
+# ############################################################
+source ~ma/bin/oscconf || { exit 99; }
+# ############################################################
+
+REQLOG="$OSCLOGSDIR/log"
+
+function reqlog()
+{
+  echo "### $(date +"%F %H:%M:%S") $@" >>"$REQLOG"
+}
+
+
+function oscxx()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local TRG="$3"
+  Recho "***"
+  Recho "*** $OSCSUB: No direct submission from $PRJ to $TRG"
+  Recho "***"
+}
+function oscxm()
+{ oscxx "$@"; }
+
+function oscxs()
+{ oscxx "$@"; }
+
+
+function oscLastMrToPrj ()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local MPRJ="openSUSE:Maintenance"
+  test "$OSC" == "isc" && MPRJ="SUSE:Maintenance"
+
+  $OSC request list "$MPRJ" | awk -v PRJ="$PRJ/" '
+    /^[0-9]+/ { cid = $1 }
+    ( $1 == "maintenance_incident:" && index( $2, PRJ ) == 1 ) { lid = cid }
+    END { print lid }
+  '
+}
+
+
+function oscmr()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local TRG="$3"
+  reqlog "mr" "$PRJ" $PKGS "$TRG"
+  $OSC maintenancerequest -m "Softwarestack update"  "$PRJ" $PKGS "$TRG" 2>&1 | tee -a "$REQLOG"
+  local INFO="$(oscLastMrToPrj "$OSC" "$PRJ")"
+  Gecho "$INFO: $PRJ - $PKGS -> $TRG"
+  oscmrstats_new "$OSC" "$PRJ" "$INFO" "$PKGS"
+}
+
+
+function oscsr()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local TRG="$3"
+  for P in $PKGS; do
+    reqlog "sr" "$PRJ" "$P" "$TRG"
+    $OSC submitreq --yes -m "Softwarestack update" "$PRJ" "$P" "$TRG" 2>&1 | tee -a "$REQLOG"
+    Gecho "SR: $PRJ - $P -> $TRG"
+  done
+}
+
+################################################################################
+
+function oscDoSubmitt()
+{
+  local SPRJ="$1"
+  local AUTO="$2"
+  # reset PKGS to commandline args after get_oscconf
+  get_oscconf "$SPRJ" || exit 99
+  PKGS="$ARGPKGS"
+
+  test -n "$AUTO" && {
+    case "$OSCSUB" in
+      xs)
+	OSCSUB="sr"
+	;;
+      xm)
+	OSCSUB="mr"
+	;;
+    esac
+  }
+
+  for T in $TPRJ; do
+    osc$OSCSUB $OSC $SPRJ $T
+  done
+}
+
+################################################################################
+
+test $# -lt 2 && {
+  echo "Usage: oscsubmitt PRJ PKGS..."
+  echo "PRJ:"
+  print_oscconf
+  echo "PKGS:  libsolv libzypp zypper libzypp-testsuite-tools zypp-plugin (libzypp-bindings libsatsolver libqdialogsolver1)"
+  exit 1
+}
+
+# unset FORCE
+# if [ "$1" == "-f" -o "$1" == "--force" ]; then
+#   FORCE=1
+#   shift
+# fi
+ARGPRJ="$1"
+shift
+ARGPKGS="$@"
+
+oscDoSubmitt "$ARGPRJ" $FORCE
+for A in $(oscautosubmittprj $ARGPRJ); do
+  oscDoSubmitt "$A" auto
+done

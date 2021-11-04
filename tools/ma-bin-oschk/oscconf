@@ -1,0 +1,284 @@
+#! /bin/bash
+# ############################################################
+function Recho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;31m""$@""\e[0m"; }
+function Gecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;32m""$@""\e[0m"; }
+function Becho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;34m""$@""\e[0m"; }
+function Cecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;36m""$@""\e[0m"; }
+function Mecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;35m""$@""\e[0m"; }
+function Yecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;33m""$@""\e[0m"; }
+function BLecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;30m""$@""\e[0m"; }
+function WHecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[1;37m""$@""\e[0m"; }
+# ############################################################
+
+OSCLOGSDIR=~ma/"Maintenance"
+
+function get_oscconf()
+{
+  local CONF
+  local SOLV_STACK="libsolv libzypp zypper"
+  local SAT_STACK="libsatsolver libzypp zypper"
+  local ZMD_STACK="libzypp zypper zypp-zmd-backend"
+
+  # OSC [osc|isc]	whether prjs are in external/internal build service
+  # OSCSUB [sr|mr	whether package submission via submitt or maintenence request
+  #        |xs|xm	only autosubmitted together with an other distro (see oscallsubmittprj)
+  #        |xx]		no direct submission at all
+
+  # SPRJ		source project usually fed by jenkins
+  # TPRJ		target project for package submission
+  #
+  # PKGS		list of core packages (MUST BE LAST ENTRY!!!)
+  #
+  # See also: function oscallsubmittprj
+
+  case "$1" in
+    head)	CONF="osc sr	zypp:Head		openSUSE:Factory			$SOLV_STACK"	;;
+
+    # ================================================================================
+
+    s15sp4)	CONF="isc sr    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:GA			$SOLV_STACK"    ;;
+    s15sp3)	CONF="isc xx    Devel:zypp:SLE15SP3	SUSE:SLE-15-SP3:Update			$SOLV_STACK"    ;;
+    s15sp2)	CONF="isc xm    Devel:zypp:SLE15SP2	SUSE:SLE-15-SP2:Update			$SOLV_STACK"    ;;
+    s15sp1)	CONF="isc xm    Devel:zypp:SLE15SP1	SUSE:SLE-15-SP1:Update			$SOLV_STACK"    ;;
+    s15)	CONF="isc mr    Devel:zypp:SLE15	SUSE:SLE-15:Update			$SOLV_STACK"    ;;
+
+    # ================================================================================
+
+    s12sp5)	CONF="isc xx    Devel:zypp:SLE12SP5	SUSE:SLE-12-SP5:Update			$SOLV_STACK"    ;;
+    s12sp4)	CONF="isc xx    Devel:zypp:SLE12SP4	SUSE:SLE-12-SP4:Update			$SOLV_STACK"    ;;
+    s12sp3)	CONF="isc xm    Devel:zypp:SLE12SP3	SUSE:SLE-12-SP3:Update			$SOLV_STACK"    ;;
+    s12sp2)	CONF="isc mr    Devel:zypp:SLE12SP2	SUSE:SLE-12-SP2:Update			$SOLV_STACK"    ;;
+    #s12sp1)	CONF="isc mr    Devel:zypp:SLE12SP1	SUSE:SLE-12-SP1:Update			$SOLV_STACK"    ;;
+    #s12)	CONF="isc mr	Devel:zypp:SLE12	SUSE:SLE-12:Update			$SOLV_STACK"	;;
+
+    # c42.3)	CONF="osc xx	zypp:SLE-12-SP3-Branch	openSUSE:Leap:42.3:Update		$SOLV_STACK"	;;
+    # c42.2)	CONF="osc xx	zypp:SLE-12-SP2-Branch	openSUSE:Leap:42.2:Update		$SOLV_STACK"	;;
+    # c42.1|leap)	CONF="osc xx	zypp:SLE-12-SP1-Branch	openSUSE:Leap:42.1:Update		$SOLV_STACK"	;;
+    # c13.2)	CONF="osc mr	zypp:Code13_2-Branch	openSUSE:13.2:Update			$SOLV_STACK"	;;
+    # c13.1)	CONF="osc mr	zypp:Code13_1-Branch	openSUSE:13.1:Update			$SOLV_STACK"	;;
+    # c12.3)	CONF="osc mr	zypp:Code12_3-Branch	openSUSE:12.3:Update			$SOLV_STACK"	;;
+    # c12.2)	CONF="osc mr	zypp:Code12_2-Branch	openSUSE:12.2:Update			$SOLV_STACK"	;;
+    # c12.1)	CONF="osc mr	zypp:Code12_1-Branch	openSUSE:12.1:Update			$SOLV_STACK"	;;
+
+    # ================================================================================
+
+    #s11sp4)	CONF="isc xx	Devel:zypp:SLE11SP4	SUSE:SLE-11-SP3:Update			$SAT_STACK"	;;
+    #s11sp3)	CONF="isc mr	Devel:zypp:SLE11SP3	SUSE:SLE-11-SP3:Update			$SAT_STACK"	;;
+    s11ltss)	CONF="isc mr	Devel:zypp:SLE11SP3	SUSE:SLE-11-SP3:Update			$SAT_STACK"	;;
+    # SLE11SP1 == Code-11_2
+    # s11sp1)	CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-11-SP1:Update:Test		$SAT_STACK"	;;
+    # ? s11)	CONF="isc sr	Devel:zypp:SLE11	SUSE:SLE-11:Update:Test			$SAT_STACK"	;;
+
+    # c11.4)	CONF="osc mr	zypp:Code11_4-Branch	openSUSE:11.4:Update			$SAT_STACK"	;;
+    # c11.3)	CONF="osc sr	zypp:Code11_3-Branch	openSUSE:11.3:Update			$SAT_STACK"	;;
+    # c11.2)	CONF="osc sr	zypp:Code11_2-Branch	openSUSE:11.2:Update			$SAT_STACK"	;;
+    # c11)	CONF="osc sr	zypp:Code11-Branch	openSUSE:11.1:Update			$SAT_STACK"	;;
+
+    # ================================================================================
+
+    # s10sp4)	CONF="isc sr	Devel:zypp:SLE10-SP4	SUSE:SLE-10-SP4:Update:Test		$ZMD_STACK"	;;
+
+    #?smgr)	CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-11-SP1:Update:Test		$SAT_STACK"	;;
+    # smgrC10.1.7)CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-10-SP3:Manager:1.7:Update:Test	$SAT_STACK"	;;
+    # smgrC10.1.2)CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-10-SP3:Manager:1.2:Update:Test	$SAT_STACK"	;;
+
+    *)
+      Recho "Unknown configuration '$1'" >&2
+      # CYCLE: echo "$(print_oscconf)" >&2
+      return 99
+      ;;
+  esac
+  read OSC OSCSUB SPRJ TPRJ	PKGS <<<"$CONF"
+  return 0
+}
+
+function oscautosubmittprj()
+{
+  # In theory we'd like to submitt each source branch once
+  # and let maintenance propagate it to higher SPs which share
+  # the same code.
+  # Wherever maintenance can't, we keep the stuff in sync upon oscsubmitt:
+  local SPRJ="$1"
+  case "$1" in
+    s15)
+      #echo "s15sp1"
+      echo "s15sp1 s15sp2 s15sp3"
+      ;;
+    s12sp2)
+      echo "s12sp3"
+      ;;
+  esac
+}
+
+function print_oscconf()
+{
+  OSCCONFS="head s15sp4 s15sp3 s15sp2 s15sp1 s15 s12sp3 s12sp2 s11ltss"
+  for CFG in $OSCCONFS; do
+    get_oscconf $CFG
+    S="$(printf "  %-13s %-5s %-25s -(%s)-> %-25s\n" "$CFG" "$OSC" "$SPRJ" "$OSCSUB" "$TPRJ")"
+    case "$OSCSUB" in
+      xx)
+	Cecho "$S"
+	;;
+      x[sm])
+	Gecho "$S"
+	;;
+      x?)
+	Recho "$S"
+	;;
+      *)
+	echo "$S"
+	;;
+    esac
+  done
+}
+
+# ############################################################
+if [ "$(basename "$0")" == "oscconf" ]; then
+  print_oscconf
+fi
+# ############################################################
+
+# ############################################################
+# oscmrstats until I know how to track running mrs.
+# ############################################################
+
+function noTZ()
+{
+  sed 's/ CET / /'
+}
+
+function oscmrstats()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  shift 2
+  local PKGS="${@:-$(osc ls "$PRJ")}"
+  echo "$PRJ $(date +"%F %H:%M:%S")"
+  for _P in $PKGS; do
+    TPP=""
+    LPP="$PRJ $_P"
+    while [ -n "$LPP" ]; do
+      TPP="$LPP"
+      LPP="$($OSC ls $TPP | awk '/^# ->/{ print $3, $4 }')"
+      _P="$(awk '{ printf "%s (%s)", $2, $1 }' <<<"$TPP")"
+    done
+    TBZ="$($OSC ls $TPP | grep '\.tar\.')"
+    printf "%-40s| " "$_P"
+    $OSC log $TPP | head -n 2 | tail -n 1 | noTZ | sed "s/unknown/$TBZ/"
+  done
+}
+
+function oscmrstats_old()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  shift 2
+  local PKGS="${@:-$(osc ls "$PRJ")}"
+  echo "$PRJ $(date +"%F %H:%M:%S")"
+  for _P in $PKGS; do
+    LNK="$($OSC ls "$PRJ" "$_P" | grep '^# ->')"
+    TBZ="$($OSC ls "$PRJ" "$_P" | grep '\.tar\.')"
+    printf "%-40s| " "$_P"
+    $OSC log "$PRJ" "$_P" | head -n 2 | tail -n 1 | sed "s/unknown/$TBZ$LNK/"
+  done
+}
+
+function oscmrstats_new()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local INFO="$3"
+  shift 3
+  local PKGS="$@"
+
+  local COLLECTD="$OSCLOGSDIR"
+  test -d "$COLLECTD" || {
+    echo -e "\x1B[0;31mWhere to keep the requests? '$COLLECTD' does not exist.\x1B[0m" >&2
+    return 1
+  }
+  local DST="$COLLECTD/$PRJ $(date +"%F %H:%M:%S")"
+  oscmrstats "$OSC" "$PRJ" "$PKGS" > "$DST"
+  echo "$INFO" >> "$DST"
+  cat "$DST"
+}
+
+function oscmrstats_diff()
+{
+  local OSC="$1"
+  local PRJ="$2"
+  local PKG="$3"
+  local COLLECTD="$OSCLOGSDIR"
+  test -d "$COLLECTD" || {
+    echo -e "\x1B[0;31mWhere to keep the requests? '$COLLECTD' does not exist.\x1B[0m" >&2
+    return 1
+  }
+
+  local LASTSTATS="$(grep -H "^$PKG[ |]" "$COLLECTD/$PRJ "* | tail -n 1)"
+  local LASTSTATSFILE="$(sed 's/\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\):.*/\1/' <<<"$LASTSTATS")"
+  local LASTSTATSMRNO="$(grep "^[0-9]\+$" "$LASTSTATSFILE")"
+
+  local OLD="$(sed 's/^[^|]*[0-9]://' <<<"$LASTSTATS")"
+  local NEW="$(oscmrstats "$OSC" "$PRJ" "$PKG" | tail -n 1)"
+
+  echo  " Last mr: ${LASTSTATSMRNO:-unknown} $(basename "$LASTSTATSFILE")"
+
+  test -n "$LASTSTATSMRNO" && {
+    $OSC request show "$LASTSTATSMRNO" | awk '
+      function Mprint(a)
+      { printf "\033[0;35m" a "\033[0m" }
+      function Bprint(a)
+      { printf "\033[0;34m" a "\033[0m" }
+      /^State:/ {
+	dec = ( $2 == "declined" )
+	acc = ( $2 == "accepted" )
+	s=" "$0
+      }
+      /^Comment:/ {
+	c=" "$0
+      }
+      END {
+	if ( dec ) {
+	  Mprint( s"\n" )
+	  Mprint( c"\n" )
+
+	} else if ( acc ) {
+	  print s
+	} else {
+	  Bprint( s"\n" )
+	}
+      }
+    '
+  }
+
+  if [ "$OLD" != "$NEW" ]; then
+      echo "$OLD"
+      echo "$NEW"
+  else
+      echo "$OLD"
+  fi | awk '
+    function Rprint(a)
+    { printf "\033[0;31m" a "\033[0m" }
+    function Bprint(a)
+    { printf "\033[0;34m" a "\033[0m" }
+    { for ( i = 1; i <= NF; i+=1 ) t[NR][i] = $i; if ( NF > maxnf ) maxnf = NF; }
+    END {
+      for ( j = 1; j <= maxnf; j+=1 )
+	printf " "t[1][j]
+      print ""
+      if ( NR == 1 )
+	Bprint( " Running.\n" )
+      else {
+	for ( j = 1; j <= maxnf; j+=1 )
+	  if ( t[1][j] == t[2][j] )
+	    printf( " "t[2][j] )
+	  else
+	    Rprint( " "t[2][j] )
+	print ""
+      }
+    }
+  '
+
+}
+# ############################################################
+
