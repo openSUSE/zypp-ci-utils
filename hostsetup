@@ -36,7 +36,7 @@ test -d ~/hudson/workspace || {
   DEVELPKGS="$DEVELPKGS readline-devel rpm-devel ruby-devel"
   DEVELPKGS="$DEVELPKGS swig"
   DEVELPKGS="$DEVELPKGS yaml-cpp-devel"
-  DEVELPKGS="$DEVELPKGS zlib-devel"
+  DEVELPKGS="$DEVELPKGS zlib-devel libzck-devel"
 
   # Prepare the repos
   rm -f /etc/zypp/repos.d/*
