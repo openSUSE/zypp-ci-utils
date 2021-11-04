@@ -3,10 +3,10 @@ import sys
 #======================================================================
 
 def _cwrite( stream, color, term, *args ):
-  stream.write( color )
-  for arg in args: stream.write( arg )
-  stream.write( _DEF )
-  if term: stream.write( "\n" )
+    stream.write( color )
+    for arg in args: stream.write( arg )
+    stream.write( _DEF )
+    if term: stream.write( "\n" )
 
 #======================================================================
 
