@@ -129,8 +129,12 @@ function ci_build()
   msg "==> Building"
 
   # cmake won't put headers found in /usr/include into the make depends.
-  test -e /usr/local/include/solv || ln -s /usr/include/solv/ /usr/local/include/solv
-  test -e /usr/local/include/zypp || ln -s /usr/include/zypp/ /usr/local/include/zypp
+  for D in solv zypp zypp-core zypp-curl zypp-media; do
+    [ -L "/usr/local/include/$D" ] || {
+      [ -e "/usr/local/include/$D" ] && error_exit "Exists bit no symlink: /usr/local/include/$D"
+      ln -s "/usr/include/$D/" "/usr/local/include/$D"
+    }
+  done
   export CMAKE_PREFIX_PATH="/usr/local/include:/usr/include"
 
   #
@@ -221,6 +225,19 @@ function ci_install()
   fi
 
   msg "==> Installing"
+  case "$JOB_BASE_NAME" in
+    *-libsolv)
+      msg "==> Clean old includes"
+      [ -d /usr/include/solv ] && rm -r /usr/include/solv/*
+      ;;
+    *-libzypp)
+      msg "==> Clean old includes"
+      for D in zypp zypp-core zypp-curl zypp-media; do
+        [ -d "/usr/include/$D" ] && rm -r "/usr/include/$D"/*
+      done
+      ;;
+  esac
+
   make install
 
   if [ "$JOB_BASE_NAME" == "20-libzypp" ]; then
