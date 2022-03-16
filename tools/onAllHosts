@@ -1,7 +1,7 @@
 #! /bin/bash
 
 #LABELS="${LABELS:-head s15sp1 s12sp3 s12sp2 s12sp1 s12 s11sp3}"
-LABELS="${LABELS:-head s15sp1 s12sp2 s12sp1 s12 s11sp3}"
+LABELS="${LABELS:-head s15sp1 s12sp2 s12sp1 s12}"
 
 test -z "$1" && {
   echo "Usage: $(basename "$0") SCRIPT"
