@@ -93,3 +93,6 @@ For building SLE the complete OBS project is linked into IBS and built there:
 IBS:	Devel:zypp:SLE@@	(Build link to obs://zypp:SLE-@@-Branch)
 	(in Advanced/Meta: <link project="openSUSE.org:zypp:SLE-@@-Branch"/>
 			   <repository ...  linkedbuild="all">)
+
+Additional packages using the zypp stack:
+        PackageKit yast2-pkg-bindings
