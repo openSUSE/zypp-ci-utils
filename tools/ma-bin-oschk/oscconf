@@ -36,7 +36,7 @@ function get_oscconf()
 
     # ================================================================================
 
-    s15sp4)	CONF="isc sr    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:GA			$SOLV_STACK"    ;;
+    s15sp4)	CONF="isc xm    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:Update			$SOLV_STACK"    ;;
     s15sp3)	CONF="isc xx    Devel:zypp:SLE15SP3	SUSE:SLE-15-SP3:Update			$SOLV_STACK"    ;;
     s15sp2)	CONF="isc xm    Devel:zypp:SLE15SP2	SUSE:SLE-15-SP2:Update			$SOLV_STACK"    ;;
     s15sp1)	CONF="isc xm    Devel:zypp:SLE15SP1	SUSE:SLE-15-SP1:Update			$SOLV_STACK"    ;;
@@ -101,8 +101,7 @@ function oscautosubmittprj()
   local SPRJ="$1"
   case "$1" in
     s15)
-      #echo "s15sp1"
-      echo "s15sp1 s15sp2 s15sp3"
+      echo "s15sp1 s15sp2 s15sp3 s15sp4"
       ;;
     s12sp2)
       echo "s12sp3"

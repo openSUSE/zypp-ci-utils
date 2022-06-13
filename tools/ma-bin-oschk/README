@@ -5,3 +5,7 @@ Backup/Source of internal OSC check and release scripts
 For now, to avoid inconsistencies, scripts and configs are maintained
 in my bin/ dir. All scripts refer to this location. Team-mates should
 call ~ma/bin/{oscchk,oscsubmitt} directly or link to those scripts.
+
+https://smelt.suse.de/maintained/?q=zypper may help to figure out where
+we need to send the maintenance requests to, and which are distributed
+by maintenance internally.
