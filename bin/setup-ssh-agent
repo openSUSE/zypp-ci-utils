@@ -1,0 +1,18 @@
+#! /bin/bash
+
+(( $SSH_AGENT_PID )) && ps $SSH_AGENT_PID && {
+  echo "ssh-agent seems to be up. Skipping." >&2
+  exit 1
+}
+
+eval $(ssh-agent)
+export SSH_ASKPASS="/usr/lib/ssh/x11-ssh-askpass"
+ssh-add $HOME/.ssh/id_ed25519 ssh-add $HOME/.ssh/id_rsa </dev/null
+
+SSHRC=$HOME/.ssh-localagent
+rm -f $SSHRC
+cat << EOF > $SSHRC
+SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AGENT_PID;
+SSH_AUTH_SOCK=$SSH_AUTH_SOCK; export SSH_AUTH_SOCK;
+EOF
+chmod 400 $SSHRC
