@@ -28,6 +28,7 @@ test -d ~/hudson/workspace || {
   DEVELPKGS="$DEVELPKGS gcc-c++ gettext-devel glib2-devel graphviz"
   DEVELPKGS="$DEVELPKGS hal-devel"
   DEVELPKGS="$DEVELPKGS icecream"
+  DEVELPKGS="$DEVELPKGS java-11-openjdk"
   DEVELPKGS="$DEVELPKGS libcurl-devel libexpat-devel libproxy-devel librpm-devel libxml2-devel"
   DEVELPKGS="$DEVELPKGS ntp"
   DEVELPKGS="$DEVELPKGS openssl-devel osc"
