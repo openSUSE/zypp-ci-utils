@@ -51,7 +51,7 @@ function oscmr()
   $OSC maintenancerequest -m "Softwarestack update"  "$PRJ" $PKGS "$TRG" 2>&1 | tee -a "$REQLOG"
   local INFO="$(tail -n 1 "$REQLOG")"
   #local INFO="$(oscLastMrToPrj "$OSC" "$PRJ")"
-  Gecho "$INFO: $PRJ - $PKGS -> $TRG"
+  Gecho "MR#$INFO: $PRJ - $PKGS -> $TRG"
   oscmrstats_new "$OSC" "$PRJ" "$INFO" "$PKGS"
 }
 
