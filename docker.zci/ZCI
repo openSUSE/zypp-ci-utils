@@ -1,0 +1,191 @@
+#! /bin/bash
+set -e
+################################################################################
+# Packages to build
+CI_PKGS="libsolv libzypp zypper zypp-plugin"
+#######  ^>    STACK FIRST   <^
+
+function pkgGitBranch() # local PKG="$1"
+{ echo "master"; }
+
+function pkgOBSPrj() 	# local PKG="$1"
+{ echo "zypp:Head"; }
+
+################################################################################
+function hasLocalChanges()
+{ [[ $(git status --porcelain --untracked-files=no) ]]; }
+
+function currentBranch()
+{ git rev-parse --abbrev-ref HEAD; }
+
+function tag2hash()
+{ git show-ref -s "$1"; }
+
+function tag2comm()
+{ git log --pretty=reference --relative HEAD^..HEAD; }
+
+function v_curr()
+{ echo "$(tr -- - _ <<<"$1")_curr"; }
+
+################################################################################
+CI_CONFIG="$CI_ROOT/ZCI/CONFIG"  # e.g. credentails for OSC in local volume
+[ -d "$CI_CONFIG" ] || {
+    Recho "No CI_CONFIG dir at $CI_CONFIG"
+    exit 1
+}
+# remap CI_ROOT as we completely build inside the container:
+CI_ROOT="$CI_BUILDROOT"
+[ -d "$CI_ROOT" ] || mkdir "$CI_ROOT"
+cd "$CI_ROOT"
+
+[ -d ARTIFACTS ] || mkdir ARTIFACTS
+[ -d BUILD ]     || mkdir BUILD
+
+BUILD_PKGS=""
+
+for PKG in $CI_PKGS; do
+  MBRANCH="$(pkgGitBranch "$PKG")"
+  declare -n V_CURR="$(v_curr "$PKG")"
+  declare -n V_COMM="$(v_curr "$PKG")_comm"
+  Becho "################################################################################"
+  Becho "## GIT: $PKG"
+  Becho "################################################################################"
+  [ -d "$CI_ROOT/$PKG" ] || {
+    cd "$CI_ROOT"
+    git clone "git@github.com:openSUSE/$PKG.git" "$PKG"
+  }
+  cd "$CI_ROOT/$PKG"
+
+  [ "$(currentBranch)" == "$MBRANCH" ] || {
+    Recho "Not on branch $MBRANCH (on $(currentBranch))"
+    exit 1
+  }
+
+  hasLocalChanges && {
+    Recho "Branch $MBRANCH has local changes"
+    exit 1
+  }
+
+  git pull
+  V_CURR="$(tag2hash "heads/$MBRANCH")"
+  V_COMM="$(tag2comm)"
+
+  ################################################################################
+  cd "$CI_ROOT/ARTIFACTS"
+  ATAG="$PKG-${V_CURR}"
+  if [ -e "$ATAG" ]; then
+    Gecho "$ATAG already uploaded to OBS"
+    continue
+  else
+    Mecho "$ATAG needs to be built"
+    case "$PKG" in
+      libsolv|libzypp|zypper)
+        BUILD_PKGS="libsolv libzypp zypper" # build whole STACK FIRST!
+        ;;
+      zypp-plugin)
+        BUILD_PKGS="$BUILD_PKGS $PKG"
+        ;;
+    esac
+  fi
+done
+
+################################################################################
+
+for PKG in $BUILD_PKGS; do
+  Becho "################################################################################"
+  Becho "## BUILD: $PKG"
+  Becho "################################################################################"
+  [ -d "$CI_ROOT/BUILD/$PKG" ] || mkdir "$CI_ROOT/BUILD/$PKG"
+  cd "$CI_ROOT/BUILD/$PKG"
+
+  [ -f "Makefile" ] || {
+    if [ -f "../../$PKG/CMakeLists.txt" ]; then
+	CMAKE_ARGS="-DCMAKE_MODULE_PATH=/usr/local/share/cmake/Modules -DCMAKE_PREFIX_PATH='/usr/local;/usr'"
+	case "$PKG" in
+	    libsolv)
+		CMAKE_ARGS="$CMAKE_ARGS -DSUSE=1 -DENABLE_STATIC=1 -DDISABLE_SHARED=1 -DWITH_LIBXML2=1 -DENABLE_APPDATA=0"
+		CMAKE_ARGS="$CMAKE_ARGS -DENABLE_SUSEREPO=1 -DENABLE_HELIXREPO=1 -DENABLE_COMPLEX_DEPS=1"
+		# on head and s15
+		CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZSTD_COMPRESSION=1 -DENABLE_ZCHUNK_COMPRESSION=1"
+
+		;;
+	    libzypp)
+		# on head and s15
+		CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZCHUNK_COMPRESSION=1"
+		;;
+	    *)
+		;;
+	esac
+	Mecho cmake $CMAKE_ARGS "../../$PKG"
+	cmake $CMAKE_ARGS "../../$PKG"
+    elif [ -f "../../$PKG/Makefile" ]; then
+	# Built inside sourcedir
+	cd ..
+	rmdir "$PKG"
+	ln -s "../$PKG" .
+	cd "$PKG"
+    else
+	Recho "Can not find a a Makefile for $PKG"
+	exit 1
+    fi
+  }
+
+  rm -f package/*.tar.bz2
+
+  case "$PKG" in
+    libsolv|libzypp|zypper)
+      make
+      sudo make install
+      TESTD="tests"
+      [ -d "$TESTD" ] || TESTD="test"   # libsolv
+      make -C "$TESTD"
+      make test
+      make srcpackage_local
+      ;;
+    zypp-plugin)
+      make clean
+      make package
+      ;;
+    *)
+      Recho "Project not configured"
+      exit 1
+      ;;
+  esac
+done
+
+################################################################################
+OSCBIN="/usr/bin/osc"
+OSCAPI="https://api.opensuse.org"
+OSCRC="$CI_CONFIG/oscrc"
+OSC="$OSCBIN -A $OSCAPI --config $OSCRC"
+
+for PKG in $BUILD_PKGS; do
+  OBSPRJ="$(pkgOBSPrj "$PKG")"
+  declare -n V_CURR="$(v_curr "$PKG")"
+  declare -n V_COMM="$(v_curr "$PKG")_comm"
+  Becho "################################################################################"
+  Becho "## to OBS: $PKG"
+  Becho "################################################################################"
+  cd "$CI_ROOT/ARTIFACTS"
+  ATAG="$PKG-${V_CURR}"
+
+  if [ -e "$ATAG" ]; then
+    Gecho "$ATAG already uploaded"
+  else
+    Recho "$ATAG is to be uploaded"
+    rm -rf "$PKG"*
+    rm -rf "$OBSPRJ/$PKG"
+
+    ${OSC} co -u "$OBSPRJ" "$PKG"
+    rm -rf "$OBSPRJ/$PKG"/*.tar.bz2
+    cp -av ../BUILD/$PKG/package/* "$OBSPRJ/$PKG"
+    pushd "$OBSPRJ/$PKG"
+
+    ${OSC} addremove
+    ${OSC} ci -m "gitrev $V_COMM"
+    popd
+    touch "$ATAG"
+    Mecho "osc update to gitrev $V_COMM"
+  fi
+
+done

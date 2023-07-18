@@ -1,0 +1,43 @@
+File .env
+=========
+
+CI_ROOT_VOLUME=/Local/ZCIWorkspace
+- Path where the outer and inner workdirs are mounted. As long as
+  git-new-workdir is used by ZCIbuild, both paths must be the same because
+  new-workdir always uses absolute paths to symlink into the master checkout
+  dir. ZCIbuild just builds inside the container but uses sources and artifacts
+  in CI_ROOT_VOLUME.
+- For ZCI - which also does OBS submissions - everything is kept inside
+  the container. Just the OBS credentials are expected to be provided in
+  CI_ROOT_VOLUME/ZCI/CONFIG/oscrc.
+
+CI_UID=216
+CI_GID=50
+- Ids for user/group zci inside the container. The local CI_ROOT_VOLUME should
+  allow reads (ZCI) and writes (ZCIbuild).
+
+Layout:
+    CI_ROOT_VOLUME/
+	# by ZCI:
+	+- ZCI/CONFIG/
+	    +- oscrc
+	# by ZCIbuild:
+	+- 'PRJ'/
+	    +- ARTIFACTS/
+		+- 'PKG'/		# make package artifacts
+		+- 'PKG'.label		# git checkout of artifacts
+	    +- 'PKG'/			# git source checkout
+
+    PRJ like 'head', 's12sp2', 's11ltss' (try maching the `oscsubmitt` tags)
+    PKG like 'libsolv', 'libzypp', 'zypper'
+
+
+Build
+=====
+docker compose --profile tw build
+(docker system prune)
+
+RUN
+===
+docker compose run --rm [--name ???] [-ti] zci-tw
+docker compose run --rm [--name ???] [-ti] zci-tw bash -l -c bin/ZCI

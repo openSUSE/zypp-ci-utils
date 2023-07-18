@@ -1,0 +1,44 @@
+export PATH="$HOME/bin:$PATH"
+export USER="${USER:-zci}"
+export PS1="[$CI_PRJ]\w (\$?)> "
+
+alias ll='ls -l'
+
+export PATH="$CI_ROOT:$PATH"	# avoid container rebuild for testing ZCIbuild
+export CI_BUILDROOT="$HOME/BUILD/$CI_PRJ"
+export O_MAYBUILD=1
+
+# ############################################################
+# ISO 6429 color sequences are composed of sequences of
+# numbers separated by semicolons.  The most common codes are:
+#    0     to restore default color
+#    1     for brighter colors
+#    4     for underlined text
+#    5     for flashing text
+#   30     for black foreground
+#   31     for red foreground
+#   32     for green foreground
+#   33     for yellow (or brown) foreground
+#   34     for blue foreground
+#   35     for purple foreground
+#   36     for cyan foreground
+#   37     for white (or gray) foreground
+#   40     for black background
+#   41     for red background
+#   42     for green background
+#   43     for yellow (or brown) background
+#   44     for blue background
+#   45     for purple background
+#   46     for cyan background
+#   47     for white (or gray) background
+# ############################################################
+function Recho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;31m""$@""\e[0m"; }
+function Gecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;32m""$@""\e[0m"; }
+function Becho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;34m""$@""\e[0m"; }
+function Cecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;36m""$@""\e[0m"; }
+function Mecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;35m""$@""\e[0m"; }
+function Yecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;33m""$@""\e[0m"; }
+function BLecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;30m""$@""\e[0m"; }
+function WHecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[1;37m""$@""\e[0m"; }
+export -f Recho Gecho Becho Cecho Mecho Yecho BLecho WHecho
+# ############################################################

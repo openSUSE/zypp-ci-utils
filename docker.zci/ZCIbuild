@@ -1,0 +1,392 @@
+#! /bin/bash
+set -e
+################################################################################
+function Recho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;31m""$@""\e[0m"; }
+function Gecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;32m""$@""\e[0m"; }
+function Becho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;34m""$@""\e[0m"; }
+function Cecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;36m""$@""\e[0m"; }
+function Mecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;35m""$@""\e[0m"; }
+function Yecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo $N -e "\e[0;33m""$@""\e[0m"; }
+function errmsg()  { Recho "***$(basename "$0"): $@" >&2; }
+function errexit() { errmsg "$@"; exit 42; }
+function errhelp() {
+    cd "$CI_ROOT"
+    Cecho "CI_ROOT=$CI_ROOT"
+    Cecho "$(find * -maxdepth 1 -type d | sort | sed 's/^/    /;s%/% %')"
+    errexit "$@"
+}
+function hr() {
+  Becho "################################################################################"
+  Becho "## $@ ($CI_ROOT)"
+  Becho "################################################################################"
+}
+################################################################################
+function isLocalBranch()	{ git show-ref heads/"$1"; }
+function isRemoteBranch()	{ git show-ref remotes/origin/"$1"; }
+
+function currentBranch()	{ git rev-parse --abbrev-ref HEAD; }
+function isDirtyCheckout()	{ [[ $(git status --porcelain) ]]; }
+function hasLocalChanges()	{ [[ $(git status --porcelain --untracked-files=no) ]]; }
+
+
+function branch2hash()		{ git log --format=format:"%H" HEAD^..HEAD; }
+function branch2comm()		{ git log --pretty=reference HEAD^..HEAD; }
+################################################################################
+function cnf_git_repo()
+{
+    case "$PKG" in
+	# stack projects
+	libsolv)		echo "git@github.com:openSUSE/$PKG.git";;
+	libzypp)		echo "git@github.com:openSUSE/$PKG.git";;
+	zypper)			echo "git@github.com:openSUSE/$PKG.git";;
+	# non-stack projects
+	zypp-plugin)		echo "git@github.com:openSUSE/$PKG.git";;
+	libzypp-testsuite)	echo "git@github.com:openSUSE/zypp-solver-testcase-runner.git";;
+	# foreign projects (usually based on stack)
+	libyui)			echo "https://github.com/libyui/libyui.git";;
+	packagekit)		echo "https://github.com/hughsie/PackageKit.git";;
+	yast-pkg-bindings)	echo "https://github.com/yast/yast-pkg-bindings.git";;
+	# legacy
+	sat-solver)		echo "git@github.com:openSUSE/$PKG.git";;
+	# unknown
+	*)
+	    errexit "NO GIT REPO configured for PKG: $PKG"
+	    ;;
+    esac
+}
+function cnf_git_branch()
+{
+    case "$PRJ" in
+	head)	echo "master";;
+	s15sp5)	PRJ=s15sp4 cnf_git_branch;;
+	s15sp4)	PRJ=s15sp3 cnf_git_branch;;
+	s15sp3)	PRJ=s15sp2 cnf_git_branch;;
+	s15sp2)	PRJ=s15sp1 cnf_git_branch;;
+	s15sp1)	PRJ=s15    cnf_git_branch;;
+	s15)	PRJ=head   cnf_git_branch;;
+	s12sp3)	PRJ=s12sp2 cnf_git_branch;;
+	s12sp2)	if [ "$PKG" == "libsolv" ]; then echo "0.6.x"; else echo "SuSE-SLE-12-SP2-Branch"; fi ;;
+	s12sp1)	if [ "$PKG" == "libsolv" ]; then echo "0.6.x"; else echo "SuSE-SLE-12-SP1-Branch"; fi ;;
+	s12)	if [ "$PKG" == "libsolv" ]; then echo "0.6.x"; else echo "SuSE-SLE-12-Branch"; fi ;;
+	s11ltss)if [ "$PKG" == "sat-solver" ]; then echo "master"; else echo "SuSE-SLE-11-SP3-Branch"; fi ;;
+	# unknown
+	*)
+	    errexit "NO GIT BRANCH configured for PRJ: $PRJ"
+	    ;;
+    esac
+}
+function cnf_solvstack()
+{
+    if [ "$PRJ" == "s11ltss" ]; then
+	echo "sat-solver libzypp zypper"
+    else
+	echo "libsolv libzypp zypper"
+    fi
+}
+
+################################################################################
+function set_env()
+{
+    # Set configvars for $PRJ $PKG or cmd_*()
+    # Inherited: $PRJ_ROOT as cwd
+
+    # Checkout related:
+               CHECKOUTDIR="$PRJ_ROOT/$PKG"
+              O_GIT_BRANCH="$(cnf_git_branch)"
+         O_GIT_FORCEBRANCH=0
+	O_GIT_LOCALCHANGES=0
+
+    # Build related
+                  BUILDDIR="${CI_BUILDROOT:-$PRJ_ROOT/BUILD}/$PKG"
+                O_MAYBUILD=${O_MAYBUILD:-0}
+	      O_MAYINSTALL=${O_MAYINSTALL:-0}
+
+    # Submitt related:
+	     ARTIFACTSROOT="$PRJ_ROOT/ARTIFACTS"
+              ARTIFACTSDIR="$ARTIFACTSROOT/$PKG"
+	      O_MAYSUBMITT=${O_MAYSUBMITT:-0}
+
+    # Requested build stages IFF global O_MAY... allows
+           O_BUILD_RUNTEST=0
+           O_BUILD_INSTALL=0
+     O_BUILD_SAVEARTIFACTS=0
+
+
+    [ "$PRJ" = "head" ] && {
+	case "$PKG" in
+	    libsolv)
+		O_MAYBUILD=1
+		;;
+	    libzypp)
+		O_MAYBUILD=1
+		;;
+	    zypper)
+		O_MAYBUILD=1
+		;;
+	esac
+    }
+    true # to prevent -e from aborting !&&
+}
+
+################################################################################
+function assert_haveCheckout()
+{
+    if [ ! -d "$CHECKOUTDIR" ]; then
+	errexit "NO checkout dir $CHECKOUTDIR (missing: init $PRJ $PKG)"
+    elif [ ! -d "$CHECKOUTDIR/.git" ]; then
+	errexit "NO .git checkout in dir $CHECKOUTDIR (missing: init $PRJ $PKG)"
+    fi
+}
+
+################################################################################
+function cmd_status()
+{
+    if [ ! -d "$CHECKOUTDIR" ]; then
+	Recho "NO checkout dir $CHECKOUTDIR (missing: init $PRJ $PKG)"
+    elif [ ! -d "$CHECKOUTDIR/.git" ]; then
+	Recho "NO .git checkout in dir $CHECKOUTDIR (missing: init $PRJ $PKG)"
+    else
+	if (( $O_MAYBUILD ));		then echo "BUILD   is enabled in config."; else Mecho "BUILD   is disabled in config."; fi
+	if (( $O_MAYINSTALL ));		then echo "INSTALL is enabled in config."; else Mecho "INSTALL is disabled in config."; fi
+	if (( $O_MAYSUBMITT ));		then echo "SUBMITT is enabled in config."; else Mecho "SUBMITT is disabled in config."; fi
+
+	cd "$CHECKOUTDIR"
+	local CURR_BRANCH="$(currentBranch)"
+	if [ "$CURR_BRANCH" == "$O_GIT_BRANCH" ]; then
+	    echo "On configured branch $O_GIT_BRANCH"
+	else
+	    Recho "Not on configured branch $O_GIT_BRANCH, but on $CURR_BRANCH"
+	fi
+	if $(isDirtyCheckout); then
+	    Recho "Checkout is dirty"
+	    Recho "$(git status --porcelain)"
+	else
+	    echo "Checkout is clean"
+	fi
+    fi
+}
+
+function cmd_init()
+{
+    if [ -d "$CHECKOUTDIR/.git" ]; then
+	cmd_status
+    else
+	cd $PRJ_ROOT
+	local HEAD_CHECKOUT="../head/$PKG"
+	if [ ! -d "$HEAD_CHECKOUT" ]; then
+	    git clone "$(cnf_git_repo)" "$PKG"
+	else
+	    git-new-workdir "$HEAD_CHECKOUT" "$PKG"
+	fi
+	[ "$O_GIT_BRANCH" == "master" ] || {
+	    cd "$CHECKOUTDIR"
+	    git checkout -t -b "$O_GIT_BRANCH" "origin/$O_GIT_BRANCH"
+	}
+    fi
+}
+
+function cmd_update()
+{
+    assert_haveCheckout
+    cd "$CHECKOUTDIR"
+    local CURR_BRANCH="$(currentBranch)"
+    if [ "$CURR_BRANCH" != "$O_GIT_BRANCH" ]; then
+	Mecho "Not on configured branch $O_GIT_BRANCH - Skip update on $CURR_BRANCH"
+	return 0
+    fi
+    if hasLocalChanges; then
+	git stash
+	git pull --rebase || true
+	git stash pop
+    else
+	git pull --rebase || true
+    fi
+    git status --porcelain
+}
+
+
+function cmd_make()
+{
+    #  "-DLIBSOLV_BUILDDIR:PATH=/workspace/build-libsolv-Desktop_GCC-Debug",
+    #  "-DLIBSOLV_SRCDIR:PATH=/workspace/libsolv",
+    #
+    #  "-DCMAKE_MODULE_PATH:PATH=/workspace/libzypp/cmake/modules",
+    #  "-DZYPP_INCLUDE_DIR:PATH=/workspace/libzypp",
+    #  "-DZYPP_LIBRARY:FILEPATH=/build/libzypp/zypp/libzypp.so"
+    (( $O_MAYBUILD )) || errexit "BUILD disabled for $PRJ $PKG"
+
+    CMAKE_ARGS="-DCMAKE_MODULE_PATH=/usr/local/share/cmake/Modules"
+
+    [ -d "$BUILDDIR" -a -f "$BUILDDIR/Makefile" ] || {
+	mkdir -p "$BUILDDIR"
+	cd "$BUILDDIR"
+
+	case "$PKG" in
+	    libsolv)
+		CMAKE_ARGS="$CMAKE_ARGS -DSUSE=1 -DENABLE_STATIC=1 -DDISABLE_SHARED=1 -DWITH_LIBXML2=1 -DENABLE_APPDATA=0"
+		CMAKE_ARGS="$CMAKE_ARGS -DENABLE_SUSEREPO=1 -DENABLE_HELIXREPO=1 -DENABLE_COMPLEX_DEPS=1"
+		[ $PRJ == "head" ] && {
+		    CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZSTD_COMPRESSION=1 -DENABLE_ZCHUNK_COMPRESSION=1"
+		}
+		;;
+	    libzypp)
+		[ $PRJ == "head" ] && {
+		    CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZCHUNK_COMPRESSION=1"
+		}
+		;;
+	    *)
+		;;
+	esac
+	Mecho cmake $CMAKE_ARGS "$CHECKOUTDIR"
+	cmake $CMAKE_ARGS "$CHECKOUTDIR"
+    }
+    {
+	cd $BUILDDIR
+	MAKE="make -j 8"
+	$MAKE
+
+	(( ! $O_BUILD_RUNTEST )) || {
+	    TESTD="tests"
+	    [ -d "$TESTD" ] || TESTD="test"   # libsolv
+	    $MAKE -C "$TESTD"
+	    $MAKE test
+	}
+
+	(( ! $O_BUILD_INSTALL )) || {
+	    SUDO=""
+	    (( $UID == 0 )) || SUDO="sudo"
+	    $SUDO $MAKE install
+	    $SUDO ldconfig
+	}
+
+	(( ! $O_BUILD_SAVEARTIFACTS )) || {
+	    $MAKE srcpackage_local
+
+	    if [ -d "$ARTIFACTSDIR" ]; then
+		rm -r "$ARTIFACTSDIR"/*
+	    else
+		mkdir -p "$ARTIFACTSDIR"
+	    fi
+	    cp package/* "$ARTIFACTSDIR"
+
+	    cd "$CHECKOUTDIR"
+	    { branch2comm; branch2hash; } >"$ARTIFACTSDIR".label
+	    Cecho "$(cat "$ARTIFACTSDIR".label)"
+
+
+	    OSCDIR="$ARTIFACTSROOT/zypp:SLE-12-SP2-Branch/$PKG"
+	    if [ -d "$OSCDIR" ]; then
+		cd "$OSCDIR"
+		# osc update
+		rm *.tar.bz2
+		cp "$ARTIFACTSDIR"/* .
+
+		OSCMSG="$(head -n 1 "$ARTIFACTSDIR".label)"
+
+		Recho "cd \"$OSCDIR\""
+		Recho "osc addremove"
+		Recho "osc status"
+		Recho "osc ci -m \"$OSCMSG\""
+	    fi
+	    # for P in libzypp zypper; do MSG="$(head -n 1 $P.label)";
+	    #   rm zypp:SLE-12-SP2-Branch/$P/*.tar.bz2;
+	    #   cp $P/*zypp:SLE-12-SP2-Branch/$P;
+	    #   cd zypp:SLE-12-SP2-Branch/$P;
+	    #   osc addremove;
+	    #   osc status;
+	    #   osc ci -m "$MSG";
+	    #   cd -;
+	    # done
+	}
+    }
+}
+
+function cmd_maketest()
+{ O_BUILD_RUNTEST=1 cmd_make "$@"; }
+
+function cmd_makeinst()
+{ O_BUILD_INSTALL=1 cmd_make "$@"; }
+
+function cmd_maketestinst()
+{ O_BUILD_RUNTEST=1 O_BUILD_INSTALL=1 cmd_make "$@"; }
+
+function cmd_makesubmitt()
+{ O_BUILD_RUNTEST=0 O_BUILD_INSTALL=0 O_BUILD_SAVEARTIFACTS=1 cmd_make "$@"; }
+
+
+# make srcpackage_local
+#
+# [s12sp2]~/BUILD/libzypp (0)> ll package/
+# total 5008
+# -rw-r--r-- 1 zci zci 4712804 Apr 25 11:00 libzypp-16.22.7.tar.bz2
+# -rw-r--r-- 1 zci zci      47 Apr 20 12:29 libzypp-rpmlintrc
+# -rw-r--r-- 1 zci zci  394804 Apr 25 11:00 libzypp.changes
+# -rw-r--r-- 1 zci zci    9714 Apr 25 10:52 libzypp.spec
+#
+# osc co zypp:SLE-12-SP2-Branch libzypp
+#
+# cp package/* checkout
+
+# [SuSE-SLE-12-SP2-Branch]ma@hobbes:libzypp (0)> git show-ref -s heads/SuSE-SLE-12-SP2-Branch
+# db61d31accb90885f2e5bc0703c0253c88d3e39e
+# [SuSE-SLE-12-SP2-Branch]ma@hobbes:libzypp (0)> git log --pretty=reference --relative HEAD^..HEAD;
+# db61d31ac (changes 16.22.7 (0), 2023-04-24)
+# ma@hobbes:libzypp (0)> osc ci -m 'gitrev db61d31ac (changes 16.22.7 (0), 2023-04-24)'
+
+################################################################################
+function run_cmd()
+{ set_env; hr "$@"; "$@"; }
+
+function drive_cmd()
+(
+    local CMD="cmd_$1"
+    local PRJ="$2"
+    shift 2
+
+    local PRJ_ROOT="$CI_ROOT/$PRJ"
+    [ -d "$PRJ_ROOT" ] || errhelp "ENODIR PRJ_ROOT: $PRJ_ROOT"
+
+    Yecho ":$@"
+    for PKG in "$@"; do
+	case "$PKG" in
+	    stack)
+		Yecho "$PRJ: $(cnf_solvstack)"
+		for PKG in $(cnf_solvstack); do
+		    run_cmd "$CMD" "$PRJ" "$PKG"
+		done
+		;;
+	    *)
+		run_cmd "$CMD" "$PRJ" "$PKG"
+		;;
+	esac
+    done
+)
+################################################################################
+# ZCIbuild [PRJ] CMD
+#	PRJ	head, s12sp2, ... or passed via $CI_PRJ
+#	CMD	init, status, update, make, submit
+#	PKG	stack = { libsolv libzypp zypper }, ...
+#
+# Disk layout:
+#  $CI_ROOT/$PRJ/				# must exist; CWD for cmd_*()
+#               /$PKG/				# created...
+#               /BUILD/$PKG/
+#               /ARTIFACTS/$PKG-<GITHASH>/
+#
+CI_ROOT="${CI_ROOT:-/Local/ZCIWorkspace}"
+[ -d "$CI_ROOT" ] || errexit "ENODIR CI_ROOT: $CI_ROOT"
+cd "$CI_ROOT"
+
+# If $1 denotes a valid PRJ_ROOT it superseeds $CI_PRJ
+[ -z "$CI_PRJ" -o -d "$1" ] && {
+    CI_PRJ="$1"
+    [ -z "$CI_PRJ" ] && errhelp "MISSING PRJ: $CI_PRJ"
+    shift
+}
+
+CI_CMD="$1"
+[ -z "$CI_CMD" ] && errhelp "MISSING CMD: $CI_CMD"
+shift
+
+(( $# )) || DEFAULTARG=stack
+drive_cmd "$CI_CMD" "$CI_PRJ" "$@" $DEFAULTARG
