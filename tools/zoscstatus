@@ -1,10 +1,9 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 import sys, os, time, random
-from PyQt4 import QtCore
-from PyQt4.QtCore import *
-from PyQt4 import QtGui
-from PyQt4.QtGui import *
+from PyQt5.QtCore    import *
+from PyQt5.QtGui     import *
+from PyQt5.QtWidgets import *
 
 from zosc import *
 
@@ -28,13 +27,13 @@ defPkgs = [
     ]
 
 colors = (
-    QColor( 255, 000, 000 ),    # R
-    QColor( 255, 127, 000 ),    # 0
-    QColor( 255, 255, 000 ),    # Y
-    QColor( 000, 255, 000 ),    # G
-    QColor( 000, 000, 255 ),    # B
-    QColor( 075, 000, 130 ),    # I
-    QColor( 148, 000, 221 ),    # V
+    QColor( 0xff, 0x00, 0x00 ),    # R
+    QColor( 0xff, 0x7f, 0x00 ),    # 0
+    QColor( 0xff, 0xff, 0x00 ),    # Y
+    QColor( 0x00, 0xff, 0x00 ),    # G
+    QColor( 0x00, 0x00, 0xff ),    # B
+    QColor( 0x4b, 0x00, 0x82 ),    # I
+    QColor( 0x94, 0x00, 0xdd ),    # V
     )
 
 #======================================================================
@@ -186,10 +185,10 @@ class WStatsTable( QFrame ):
             w = self._setPkgWidget( pkg, c )
             w.setData( pkg )
 
-            if not self._vmap.has_key( pkg.name() ):
+            if pkg.name() not in self._vmap:
                 self._vmap[pkg.name()] = {}
 
-            if self._vmap[pkg.name()].has_key( pkg.version() ):
+            if pkg.version() in self._vmap[pkg.name()]:
                 vprj = self._vmap[pkg.name()][pkg.version()]
             else:
                 vprj = self._vmap[pkg.name()][pkg.version()] = prj

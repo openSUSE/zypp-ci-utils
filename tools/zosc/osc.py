@@ -1,14 +1,14 @@
 #======================================================================
-import cout
-import cmd
 import re
+from .cout import *
+from .cmd import run
 #======================================================================
 
 class Osc():
 
     @classmethod
     def cmd( cls, *args ):
-        for line in cmd.run( cls._cmdstr(), *args ):
+        for line in run( cls._cmdstr(), *args ):
             yield line
 
     @classmethod
@@ -137,6 +137,7 @@ class Pkg():
 
     def version( self ):
         if self._version is None:
+            self._version="???"
             for line in self._content():
                 m = re.search( "-([^-]*)\\.tar", line )
                 if ( m ):

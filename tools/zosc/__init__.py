@@ -1,4 +1,2 @@
-import osc
-from osc import Osc
-from osc import Obs
-from osc import Ibs
+#import osc
+from .osc import Osc, Obs, Ibs
