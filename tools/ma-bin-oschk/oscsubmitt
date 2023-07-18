@@ -1,6 +1,6 @@
 #! /bin/bash
 # ############################################################
-source ~ma/bin/oscconf || { exit 99; }
+source "$(dirname "$(realpath "$0")")/oscconf" || { exit 99; }
 # ############################################################
 
 REQLOG="$OSCLOGSDIR/log"
@@ -9,7 +9,6 @@ function reqlog()
 {
   echo "### $(date +"%F %H:%M:%S") $@" >>"$REQLOG"
 }
-
 
 function oscxx()
 {
@@ -64,7 +63,9 @@ function oscsr()
   for P in $PKGS; do
     reqlog "sr" "$PRJ" "$P" "$TRG"
     $OSC submitreq --yes -m "Softwarestack update" "$PRJ" "$P" "$TRG" 2>&1 | tee -a "$REQLOG"
+    local INFO="$(tail -n 1 "$REQLOG")"
     Gecho "SR: $PRJ - $P -> $TRG"
+    oscmrstats_new "$OSC" "$PRJ" "$INFO" "$P"
   done
 }
 

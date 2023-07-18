@@ -1,10 +1,14 @@
-
 Backup/Source of internal OSC check and release scripts
 =======================================================
 
-For now, to avoid inconsistencies, scripts and configs are maintained
-in my bin/ dir. All scripts refer to this location. Team-mates should
-call ~ma/bin/{oscchk,oscsubmitt} directly or link to those scripts.
+For now, to avoid inconsistencies, scripts and configs are maintained at
+(git@github.com:openSUSE/zypp-ci-utils.git) in tools/ma-bin-oschk.
+
+Team-mates should call {oscchk,oscconf,oscsubmitt} there or symlink those
+scripts scripts into their $PATH. Scripts will use REALPATH(1) to find the
+relevant configuration file and - in case of oscsubmitt - place the logs into
+the git directory.
+
 
 https://smelt.suse.de/maintained/?q=zypper may help to figure out where
 we need to send the maintenance requests to, and which are distributed

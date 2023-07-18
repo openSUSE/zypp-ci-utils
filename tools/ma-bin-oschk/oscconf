@@ -8,9 +8,11 @@ function Mecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N
 function Yecho()  { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;33m""$@""\e[0m"; }
 function BLecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[0;30m""$@""\e[0m"; }
 function WHecho() { local N; test "$1" == "-n" && { shift; N="-n"; }; echo -e $N "\e[1;37m""$@""\e[0m"; }
+
 # ############################################################
 
-OSCLOGSDIR=~ma/"Maintenance"
+OSCTOOLDIR="$(dirname "$(realpath "$0")")"
+OSCLOGSDIR="$OSCTOOLDIR/Maintenance"
 
 function get_oscconf()
 {
