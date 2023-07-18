@@ -38,6 +38,10 @@ function get_oscconf()
 
     # ================================================================================
 
+    alp)	CONF="isc sr	Devel:zypp:ALP		SUSE:ALP:Source:Standard:1.0		$SOLV_STACK"	;;
+
+    # ================================================================================
+
     s15sp4)	CONF="isc xm    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:Update			$SOLV_STACK"    ;;
     s15sp3)	CONF="isc xx    Devel:zypp:SLE15SP3	SUSE:SLE-15-SP3:Update			$SOLV_STACK"    ;;
     s15sp2)	CONF="isc xm    Devel:zypp:SLE15SP2	SUSE:SLE-15-SP2:Update			$SOLV_STACK"    ;;
@@ -113,7 +117,7 @@ function oscautosubmittprj()
 
 function print_oscconf()
 {
-  OSCCONFS="head s15sp4 s15sp3 s15sp2 s15sp1 s12sp3 s12sp2 s11ltss"
+  OSCCONFS="head alp s15sp4 s15sp3 s15sp2 s15sp1 s12sp3 s12sp2 s11ltss"
   for CFG in $OSCCONFS; do
     get_oscconf $CFG
     S="$(printf "  %-13s %-5s %-25s -(%s)-> %-25s\n" "$CFG" "$OSC" "$SPRJ" "$OSCSUB" "$TPRJ")"
