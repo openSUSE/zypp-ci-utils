@@ -88,6 +88,16 @@ function get_oscconf()
     # smgrC10.1.7)CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-10-SP3:Manager:1.7:Update:Test	$SAT_STACK"	;;
     # smgrC10.1.2)CONF="isc sr	Devel:zypp:SLE11SP1	SUSE:SLE-10-SP3:Manager:1.2:Update:Test	$SAT_STACK"	;;
 
+    # ================================================================================
+    # NOTE: SuSE-RES* / jezypp: Still without CI (by now no config here needed):
+    # P:	libzypp zypper
+    # PBRANCH:	SuSE-RES-8-Branch SuSE-RES-9-Branch
+    # CI must submitt to:  obs://zypp:jezypp:$PRANCH/$P
+    # Packages are picked up from zypp:jezypp by stakeholders, no further submission by us.
+    # Stakeholder: Lorinc Pato (2022.11.)
+    # Pending github issues: zypper/#467 libzypp#429 (branch rename requested)
+    # ================================================================================
+
     *)
       Recho "Unknown configuration '$1'" >&2
       # CYCLE: echo "$(print_oscconf)" >&2
