@@ -32,7 +32,8 @@ RUN echo 'alias ll="ls -l"' >>.bashrc
 
 USER ${USER}
 WORKDIR /home/zci
+RUN mkdir -m 0700 .ssh
 COPY --chown=${USER}:zci bashrc .bashrc
+COPY --chown=${USER}:zci --chmod=0600 ssh_known_hosts .ssh/known_hosts
+COPY --chown=${USER}:zci ZCI bin/
 COPY --chown=${USER}:zci ZCIbuild bin/
-
-

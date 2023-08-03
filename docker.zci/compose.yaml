@@ -5,10 +5,10 @@ services:
         volumes:
             - $SSH_AUTH_SOCK:$SSH_AUTH_SOCK
             - $CI_ROOT_VOLUME:$CI_ROOT_VOLUME
-            - ciroot:/home/zci/BUILD
+            - ciroot:/home/zci/ZCIWorkspace
         environment:
             - SSH_AUTH_SOCK=$SSH_AUTH_SOCK
-            - CI_BUILDROOT=/home/zci/BUILD
+            - CI_BUILDROOT=/home/zci/ZCIWorkspace
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=head
         extra_hosts:
@@ -28,15 +28,24 @@ services:
     zci-s15-latest:
         image: zci-s15-latest
         volumes:
+            - $SSH_AUTH_SOCK:$SSH_AUTH_SOCK
             - $CI_ROOT_VOLUME:$CI_ROOT_VOLUME
-            - buildroot:/BUILD
+            - ciroot:/home/zci/ZCIWorkspace
         environment:
+            - SSH_AUTH_SOCK=$SSH_AUTH_SOCK
+            - CI_BUILDROOT=/home/zci/ZCIWorkspace
             - CI_ROOT=$CI_ROOT_VOLUME
-            - CI_BUILDROOT=/BUILD
             - CI_PRJ=s15sp4
+        extra_hosts:
+            - "dist.suse.de:10.137.50.100"
         build:
             context: .
             dockerfile: s15-latest.Dockerfile
+            args:
+                - CI_UID=${CI_UID}
+                - CI_GID=${CI_GID}
+            extra_hosts:
+                - "dist.suse.de:10.137.50.100"
         profiles:
             - s15
 
@@ -46,10 +55,10 @@ services:
         volumes:
             - $SSH_AUTH_SOCK:$SSH_AUTH_SOCK
             - $CI_ROOT_VOLUME:$CI_ROOT_VOLUME
-            - buildroot:/home/zci/BUILD
+            - ciroot:/home/zci/ZCIWorkspace
         environment:
             - SSH_AUTH_SOCK=$SSH_AUTH_SOCK
-            - CI_BUILDROOT=/home/zci/BUILD
+            - CI_BUILDROOT=/home/zci/ZCIWorkspace
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=s12sp2
         extra_hosts:
@@ -72,10 +81,10 @@ services:
         volumes:
             - $SSH_AUTH_SOCK:$SSH_AUTH_SOCK
             - $CI_ROOT_VOLUME:$CI_ROOT_VOLUME
-            - buildroot:/home/zci/BUILD
+            - ciroot:/home/zci/ZCIWorkspace
         environment:
             - SSH_AUTH_SOCK=$SSH_AUTH_SOCK
-            - CI_BUILDROOT=/home/zci/BUILD
+            - CI_BUILDROOT=/home/zci/ZCIWorkspace
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=s11ltss
         extra_hosts:
@@ -92,5 +101,4 @@ services:
             - s11
 
 volumes:
-  buildroot:
   ciroot:

@@ -384,6 +384,10 @@ cd "$CI_ROOT"
     shift
 }
 
+# Hackish: actually we should overwrite only inside a ZCI container, so
+# we don't pollute any ZCIWorkspace volume.
+[ -z "$CI_BUILDROOT" ] || CI_BUILDROOT=~/BUILD/"$CI_PRJ"
+
 CI_CMD="$1"
 [ -z "$CI_CMD" ] && errhelp "MISSING CMD: $CI_CMD"
 shift

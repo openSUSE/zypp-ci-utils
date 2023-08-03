@@ -17,7 +17,7 @@ CI_GID=50
   allow reads (ZCI) and writes (ZCIbuild).
 
 Layout:
-    CI_ROOT_VOLUME/
+    CI_ROOT_VOLUME/			# inside and outside the container
 	# by ZCI:
 	+- ZCI/CONFIG/
 	    +- oscrc

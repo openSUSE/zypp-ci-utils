@@ -5,7 +5,7 @@ export PS1="[$CI_PRJ]\w (\$?)> "
 alias ll='ls -l'
 
 export PATH="$CI_ROOT:$PATH"	# avoid container rebuild for testing ZCIbuild
-export CI_BUILDROOT="$HOME/BUILD/$CI_PRJ"
+export CI_BUILDROOT="$CI_BUILDROOT/$CI_PRJ"
 export O_MAYBUILD=1
 
 # ############################################################
