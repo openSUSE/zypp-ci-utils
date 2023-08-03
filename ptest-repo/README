@@ -1,0 +1,4 @@
+Easy creation od dummy packages.
+
+Translate a simple ptest.repo like description of packages
+into .spec files and build the rpm packages.

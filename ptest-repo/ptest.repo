@@ -1,0 +1,13 @@
+Pkg:	ptest	1	0
+Pkg:	ptest	2	0
+Pkg:	ptest	3	0
+
+Pkg:	ptestcon	1	0
+Con:	ptf-ptest
+
+Pkg:	ptest	2	0.PTF
+ Req:	ptf-ptest = 1-0
+
+Pkg:	ptf-ptest	1	0
+ Prv:	ptf() = ptest-1
+ Req:	(ptest = 2-0.PTF if ptest)
