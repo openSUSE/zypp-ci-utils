@@ -1,0 +1,12 @@
+# package loggig all script executions
+allscripts:	1
+Pkg:	allscripts	1	0
+Pkg:	allscripts	2	0
+Pkg:	allscripts	3	0
+
+# package triggering filetrigger
+allscripts:	0
+istrigger:	1
+Pkg:	istrigger	1	0
+Pkg:	istrigger	2	0
+Pkg:	istrigger	3	0

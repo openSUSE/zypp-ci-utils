@@ -1,0 +1,3 @@
+# release package defining product:ptest
+Pkg:	ptest-release	1	0
+ Prd:	ptest
