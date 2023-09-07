@@ -142,7 +142,9 @@ def writeln( f, l ):
 def buildPkg( pdef, rdir="", allScripts=True, isTrigger=True ):
     ''' Build .spec file from "pdef" and build rpm into "rdir". '''
     Bprint( "BUILD", rdir, pdef )
-    sfile = os.path.join( rdir, f"{pdef.nvr}.spec" )
+    sfile = os.path.join( rdir, "SPECS" )
+    if not os.path.isdir( sfile ): os.mkdir( sfile )
+    sfile = os.path.join( sfile, f"{pdef.nvr}.spec" )
     with open( sfile, 'w' ) as f:
         isProduct  = pdef.product is not None
         allScripts = pdef.allscripts
@@ -194,6 +196,7 @@ def buildPkg( pdef, rdir="", allScripts=True, isTrigger=True ):
                 writeln( f,  '' )
                 writeln( f, f'%{script}' )
                 writeln( f, f'echo "[SCRIPT> %name-%version-%release %{script} $@"' )
+                writeln( f, f'if [ -e /tmp/ptest.repo.errors/%name-%version-%release.{script} ]; then exit 42; fi' )
 
         if allScripts:
             for script in ("filetriggerin", "filetriggerun", "filetriggerpostun", "transfiletriggerin", "transfiletriggerun", "transfiletriggerpostun" ):
@@ -201,6 +204,7 @@ def buildPkg( pdef, rdir="", allScripts=True, isTrigger=True ):
                 writeln( f, f'%{script} -- /tmp/ptest.repo.triggers' )
                 writeln( f, f'echo "[TRIGGR> %name-%version-%release %{script} $@"' )
                 writeln( f,  'sed "s/^/       > /"' )
+                writeln( f, f'if [ -e /tmp/ptest.repo.errors/%name-%version-%release.{script} ]; then exit 42; fi' )
 
         writeln( f, '' )
         writeln( f, '%files' )
@@ -228,7 +232,7 @@ def buildRepo( rdef ):
 
     DBG( "CLEAN rdir", rdir )
     if os.path.isdir( rdir ):
-        subprocess.run( ["sh", "-c", f"rm -f {rdir}/*.spec {rdir}/*/*.rpm"] )
+        subprocess.run( ["sh", "-c", f"rm -f {rdir}/SPECS/*.spec {rdir}/*/*.rpm"] )
     else:
         os.mkdir( rdir )
 
@@ -241,8 +245,9 @@ def main():
     '''
     Build .spec files and packages from a ptest.repo description
     into ptest.repo.d directory.
-    - All packages provide: test42
-    - All triggers refer to /tmp/ptest.repo.triggers/
+    - All packages provide: test42 (zypper -n rm test42)
+    - allScripts: All triggers refer to /tmp/ptest.repo.triggers/
+    - allScripts: If a file /tmp/ptest.repo.errors/%name-%version-%release.{script} exists, the script execution fails
     '''
     argv = sys.argv[1:]
     rfile = argv[0] if len(argv) else "ptest.repo"

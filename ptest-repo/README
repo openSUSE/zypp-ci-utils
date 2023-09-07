@@ -1,4 +1,10 @@
-Easy creation od dummy packages.
+Easy creation of dummy packages.
 
-Translate a simple ptest.repo like description of packages
-into .spec files and build the rpm packages.
+Build .spec files and packages from a ptest.repo description
+into ptest.repo.d directory.
+  - All packages provide: test42 (zypper -n rm test42)
+  - Simple product/-release package support (see prodtest.repo)
+  - allScripts: All triggers refer to /tmp/ptest.repo.triggers/
+  - allScripts: If a file /tmp/ptest.repo.errors/%name-%version-%release.{script}
+                exists, the script execution fails.
+

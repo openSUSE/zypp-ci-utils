@@ -1,12 +1,24 @@
-# package loggig all script executions
-allscripts:	1
-Pkg:	allscripts	1	0
-Pkg:	allscripts	2	0
-Pkg:	allscripts	3	0
+# just a package
+Pkg:    silentpkg       1       0
+Pkg:    silentpkg       2       0
+Pkg:    silentpkg       3       0
 
-# package triggering filetrigger
-allscripts:	0
-istrigger:	1
-Pkg:	istrigger	1	0
-Pkg:	istrigger	2	0
-Pkg:	istrigger	3	0
+# package just triggering filetrigger
+istrigger:      1
+Pkg:    silenttrigger   1       0
+Pkg:    silenttrigger   2       0
+Pkg:    silenttrigger   3       0
+
+# package loggig all script executions
+allscripts:     1
+istrigger:      0
+Pkg:    allscripts      1       0
+Pkg:    allscripts      2       0
+Pkg:    allscripts      3       0
+
+# package loggig all script executions and triggering filetrigger
+istrigger:      1
+Pkg:    istrigger       1       0
+Pkg:    istrigger       2       0
+Pkg:    istrigger       3       0
+
