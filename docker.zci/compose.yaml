@@ -12,7 +12,7 @@ services:
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=head
         extra_hosts:
-            - "dist.suse.de:10.137.50.100"
+            dist.suse.de: $DIST_SUSE_DE
         build:
             context: .
             dockerfile: tw.Dockerfile
@@ -20,8 +20,9 @@ services:
                 - CI_UID=${CI_UID}
                 - CI_GID=${CI_GID}
             extra_hosts:
-                - "dist.suse.de:10.137.50.100"
+                dist.suse.de: $DIST_SUSE_DE
         profiles:
+            - all
             - tw
 
 
@@ -37,7 +38,7 @@ services:
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=s15sp4
         extra_hosts:
-            - "dist.suse.de:10.137.50.100"
+            dist.suse.de: $DIST_SUSE_DE
         build:
             context: .
             dockerfile: s15-latest.Dockerfile
@@ -45,7 +46,7 @@ services:
                 - CI_UID=${CI_UID}
                 - CI_GID=${CI_GID}
             extra_hosts:
-                - "dist.suse.de:10.137.50.100"
+                dist.suse.de: $DIST_SUSE_DE
         profiles:
             - s15
 
@@ -62,7 +63,7 @@ services:
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=s12sp2
         extra_hosts:
-            - "dist.suse.de:10.137.50.100"
+            dist.suse.de: $DIST_SUSE_DE
         build:
             context: .
             dockerfile: s12-latest.Dockerfile
@@ -70,8 +71,9 @@ services:
                 - CI_UID=${CI_UID}
                 - CI_GID=${CI_GID}
             extra_hosts:
-                - "dist.suse.de:10.137.50.100"
+                dist.suse.de: $DIST_SUSE_DE
         profiles:
+            - all
             - s12
 
 
@@ -88,7 +90,7 @@ services:
             - CI_ROOT=$CI_ROOT_VOLUME
             - CI_PRJ=s11ltss
         extra_hosts:
-            - "dist.suse.de:10.137.50.100"
+            dist.suse.de: $DIST_SUSE_DE
         build:
             context: .
             dockerfile: s11-latest.Dockerfile
@@ -96,8 +98,9 @@ services:
                 - CI_UID=${CI_UID}
                 - CI_GID=${CI_GID}
             extra_hosts:
-                - "dist.suse.de:10.137.50.100"
+                dist.suse.de: $DIST_SUSE_DE
         profiles:
+            - all
             - s11
 
 volumes:
