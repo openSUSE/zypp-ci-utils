@@ -8,6 +8,8 @@ RUN zypper --non-interactive in --no-recommends shadow sudo man tar git osc gcc-
     libexpat-devel libproxy-devel libxml2-devel libopenssl-devel popt-devel python-devel ruby3.2-rubygem-asciidoctor\
     protobuf-devel readline-devel rpm-devel ruby-devel yaml-cpp-devel zlib-devel bzip2 \
     nginx FastCGI-devel
+# just for syncing DOCs to doc.opensuse.org
+RUN zypper --non-interactive in --no-recommends rsync
 
 ARG USER=zci
 RUN groupadd --gid ${CI_GID} zci
