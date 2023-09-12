@@ -28,6 +28,11 @@ function v_curr()
 { echo "$(tr -- - _ <<<"$1")_curr"; }
 
 ################################################################################
+[ "$CI_PRJ" == "head" ] || {
+    Recho "CI_PRJ is '$CI_PRJ'. ATM configured for 'head' only."
+    exit 1
+}
+
 CI_CONFIG="$CI_ROOT/ZCI/CONFIG"  # e.g. credentails for OSC in local volume
 [ -d "$CI_CONFIG" ] || {
     Recho "No CI_CONFIG dir at $CI_CONFIG"
