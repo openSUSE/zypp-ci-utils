@@ -137,13 +137,14 @@ for PKG in $BUILD_PKGS; do
 
   rm -f package/*.tar.bz2
 
+  MAKE="make -j 4"
   case "$PKG" in
     libsolv|libzypp|zypper)
-      make
+      $MAKE
       sudo make install
       TESTD="tests"
       [ -d "$TESTD" ] || TESTD="test"   # libsolv
-      make -C "$TESTD"
+      $MAKE -C "$TESTD"
       make test
       make srcpackage_local
       ;;
