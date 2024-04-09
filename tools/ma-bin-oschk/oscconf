@@ -42,10 +42,12 @@ function get_oscconf()
 
     # ================================================================================
 
+    s15sp6)	CONF="isc xx    Devel:zypp:SLE15SP6	SUSE:SLE-15-SP6:Update			$SOLV_STACK"    ;;
+    s15sp5)	CONF="isc xx    Devel:zypp:SLE15SP5	SUSE:SLE-15-SP5:Update			$SOLV_STACK"    ;;
     s15sp4)	CONF="isc xm    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:Update			$SOLV_STACK"    ;;
     s15sp3)	CONF="isc xx    Devel:zypp:SLE15SP3	SUSE:SLE-15-SP3:Update			$SOLV_STACK"    ;;
-    s15sp2)	CONF="isc xm    Devel:zypp:SLE15SP2	SUSE:SLE-15-SP2:Update			$SOLV_STACK"    ;;
-    s15sp1)	CONF="isc mr    Devel:zypp:SLE15SP1	SUSE:SLE-15-SP1:Update			$SOLV_STACK"    ;;
+    s15sp2)	CONF="isc mr    Devel:zypp:SLE15SP2	SUSE:SLE-15-SP2:Update			$SOLV_STACK"    ;;
+    #s15sp1)	CONF="isc mr    Devel:zypp:SLE15SP1	SUSE:SLE-15-SP1:Update			$SOLV_STACK"    ;;
     #s15)	CONF="isc mr    Devel:zypp:SLE15	SUSE:SLE-15:Update			$SOLV_STACK"    ;;
 
     # ================================================================================
@@ -116,8 +118,8 @@ function oscautosubmittprj()
   # Wherever maintenance can't, we keep the stuff in sync upon oscsubmitt:
   local SPRJ="$1"
   case "$1" in
-    s15sp1)
-      echo "s15sp2 s15sp3 s15sp4"
+    s15sp2)
+      echo "s15sp3 s15sp4 s15sp5 s15sp6"
       ;;
     s12sp2)
       echo "s12sp3"
@@ -127,7 +129,7 @@ function oscautosubmittprj()
 
 function print_oscconf()
 {
-  OSCCONFS="head alp s15sp4 s15sp3 s15sp2 s15sp1 s12sp3 s12sp2 s11ltss"
+  OSCCONFS="head alp s15sp6 s15sp5 s15sp4 s15sp3 s15sp2 s12sp3 s12sp2 s11ltss"
   for CFG in $OSCCONFS; do
     get_oscconf $CFG
     S="$(printf "  %-13s %-5s %-25s -(%s)-> %-25s\n" "$CFG" "$OSC" "$SPRJ" "$OSCSUB" "$TPRJ")"
