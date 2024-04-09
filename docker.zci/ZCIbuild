@@ -243,7 +243,11 @@ function cmd_make()
     {
 	cd $BUILDDIR
 	MAKE="make -j 8"
-	$MAKE
+	if [ "$PRJ" == "s11ltss" ]; then
+	    Recho "Make disabled for s11ltss! Fix buildsystem."
+	else
+	    $MAKE
+	fi
 
 	(( ! $O_BUILD_RUNTEST )) || {
 	    TESTD="tests"
@@ -273,9 +277,19 @@ function cmd_make()
 	    { branch2comm; branch2hash; } >"$ARTIFACTSDIR".label
 	    Cecho "$(cat "$ARTIFACTSDIR".label)"
 
+	    OBS_PRJ=''
+	    case "$PRJ" in
+		s12sp2)		OBS_PRJ="zypp:SLE-12-SP2-Branch" ;;
+		s11ltss)	OBS_PRJ="zypp:SLE-11-SP3-Branch" ;;
+		# unknown
+		*)
+		    errexit "NO OBS PRJ configured for PRJ: $PRJ"
+		    ;;
+	    esac
 
-	    OSCDIR="$ARTIFACTSROOT/zypp:SLE-12-SP2-Branch/$PKG"
+	    OSCDIR="$ARTIFACTSROOT/$OBS_PRJ/$PKG"
 	    if [ -d "$OSCDIR" ]; then
+		Cecho "-> $OSCDIR"
 		cd "$OSCDIR"
 		# osc update
 		rm *.tar.bz2
@@ -287,6 +301,8 @@ function cmd_make()
 		Recho "osc addremove"
 		Recho "osc status"
 		Recho "osc ci -m \"$OSCMSG\""
+	    else
+		Recho "ENODIR $OSCDIR"
 	    fi
 	    # for P in libzypp zypper; do MSG="$(head -n 1 $P.label)";
 	    #   rm zypp:SLE-12-SP2-Branch/$P/*.tar.bz2;
