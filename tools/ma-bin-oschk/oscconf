@@ -118,6 +118,9 @@ function oscautosubmittprj()
   # Wherever maintenance can't, we keep the stuff in sync upon oscsubmitt:
   local SPRJ="$1"
   case "$1" in
+    head)
+      echo "alp"
+      ;;
     s15sp2)
       echo "s15sp3 s15sp4 s15sp5 s15sp6"
       ;;
