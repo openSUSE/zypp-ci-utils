@@ -6,6 +6,23 @@ source "$(dirname "$(realpath "$0")")/oscconf" || { exit 99; }
 #set -x
 exec 2>&1
 
+function cdiff()
+{
+    # Colorize piped 'diff -u' output
+    awk '
+    /^(\[[0-9]+\] )?Only in .*:/ {
+	    print "\033[0;34m" $0 "\033[0m"; next }
+    /^(\[[0-9]+\] )?Binary files.*differ/ {
+	    print "\033[0;34m" $0 "\033[0m"; next }
+    /^[+-][+-][+-] / {
+	    print "\033[0;34m" $0 "\033[0m"; next }
+    /^-/  { print "\033[0;31m" $0 "\033[0m"; next }
+    /^+/  { print "\033[0;32m" $0 "\033[0m"; next }
+    /^@@/ { print "\033[0;36m" $0 "\033[0m"; next }
+    { print }
+    '
+}
+
 function oscstat()
 {
   local PRJ="$1"
@@ -159,7 +176,6 @@ for PKG in $PKGS; do
       oscmrstats_diff "$OSC" "$SPRJ" "$PKG"
     else
       RQID=$( $OSC request list "$TPRJ" "$PKG"	\
-	      | grep -v -f ~ma/.oscchk.ignore	\
 	      | 3>&2 2>&1 >&3 awk '
 		/State:/	{ rid=int($1); print }
 		/submit:/	{ print }
