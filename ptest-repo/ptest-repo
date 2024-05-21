@@ -203,7 +203,7 @@ def buildPkg( pdef, rdir="", allScripts=True, isTrigger=True ):
                 writeln( f,  '' )
                 writeln( f, f'%{script} -- /tmp/ptest.repo.triggers' )
                 writeln( f, f'echo "[TRIGGR> %name-%version-%release %{script} $@"' )
-                writeln( f,  'sed "s/^/       > /"' )
+                writeln( f, 'while read L; do echo  "       > $L"; done' )
                 writeln( f, f'if [ -e /tmp/ptest.repo.errors/%name-%version-%release.{script} ]; then exit 42; fi' )
 
         writeln( f, '' )
