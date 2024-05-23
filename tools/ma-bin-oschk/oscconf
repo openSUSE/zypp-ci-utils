@@ -38,7 +38,8 @@ function get_oscconf()
 
     # ================================================================================
 
-    alp)	CONF="isc sr	Devel:zypp:ALP		SUSE:ALP:Source:Standard:1.0		$SOLV_STACK"	;;
+    alp)	CONF="isc sr	Devel:zypp:ALP		SUSE:SLFO:Main				$SOLV_STACK"	;;
+    #alp)	CONF="isc sr	Devel:zypp:ALP		SUSE:ALP:Source:Standard:1.0		$SOLV_STACK"	;;
 
     # ================================================================================
 
