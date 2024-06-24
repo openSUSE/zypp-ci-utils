@@ -15,7 +15,7 @@ RUN zypper --non-interactive ar --gpgcheck-allow-unsigned -f http://dist.suse.de
 RUN zypper --non-interactive ar --gpgcheck-allow-unsigned -f http://dist.suse.de/ibs/SUSE:/SLE-12-SP5:/GA/standard     s12sp5GA
 RUN zypper --non-interactive ar --gpgcheck-allow-unsigned -f http://dist.suse.de/ibs/SUSE:/SLE-12-SP5:/Update/standard s12sp5Up
 RUN zypper --non-interactive --gpg-auto-import-keys ref
-RUN zypper --non-interactive in --no-recommends openssh sudo man tar git osc gcc-c++ cmake dejagnu doxygen asciidoc glibc-locale \
+RUN zypper --non-interactive --ignore-unknown in --no-recommends openssh sudo man tar git osc gcc-c++ cmake dejagnu doxygen asciidoc glibc-locale \
     augeas-devel boost-devel libcurl-devel gettext-tools glib2-devel libcurl-devel \
     libexpat-devel libproxy-devel libxml2-devel libopenssl-devel popt-devel python-devel \
     protobuf-devel readline-devel rpm-devel ruby-devel yaml-cpp-devel zlib-devel libnghttp2-devel

@@ -2,14 +2,14 @@ FROM registry.opensuse.org/opensuse/tumbleweed
 ARG CI_UID CI_GID
 
 RUN zypper --non-interactive --gpg-auto-import-keys ref
-RUN zypper --non-interactive in --no-recommends openssh shadow sudo man tar git osc gcc-c++ cmake dejagnu doxygen asciidoc \
+RUN zypper --non-interactive --ignore-unknown in --no-recommends openssh shadow sudo man tar git osc gcc-c++ cmake dejagnu doxygen asciidoc \
     glibc-locale augeas-devel boost-devel libboost_program_options-devel libboost_test-devel libboost_thread-devel \
     libcurl-devel gettext-tools glib2-devel libcurl-devel libgpgme-devel libzck-devel libsigc++2-devel asciidoc \
     libexpat-devel libproxy-devel libxml2-devel libopenssl-devel popt-devel python-devel ruby3.2-rubygem-asciidoctor\
     protobuf-devel readline-devel rpm-devel ruby-devel vsftpd yaml-cpp-devel zlib-devel bzip2 \
     nginx FastCGI-devel
 # just for syncing DOCs to doc.opensuse.org
-RUN zypper --non-interactive in --no-recommends rsync
+RUN zypper --non-interactive --ignore-unknown in --no-recommends rsync
 
 ARG USER=zci
 RUN groupadd --gid ${CI_GID} zci
