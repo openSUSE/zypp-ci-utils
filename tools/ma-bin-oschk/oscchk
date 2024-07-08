@@ -157,7 +157,7 @@ esac
 CFG=${1:-head}
 shift
 
-get_oscconf "$CFG" || exit 99
+get_oscconf "$CFG" || { print_oscconf; exit 99; }
 
 if [ "$ALLPKGS" = 1 ]; then
   PKGS="$($OSC ls "$SPRJ" | grep -v "swig")"
