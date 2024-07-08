@@ -55,8 +55,8 @@ function get_oscconf()
 
     s12sp5)	CONF="isc xx    Devel:zypp:SLE12SP5	SUSE:SLE-12-SP5:Update			$SOLV_STACK"    ;;
     s12sp4)	CONF="isc xx    Devel:zypp:SLE12SP4	SUSE:SLE-12-SP4:Update			$SOLV_STACK"    ;;
-    s12sp3)	CONF="isc xm    Devel:zypp:SLE12SP3	SUSE:SLE-12-SP3:Update			$SOLV_STACK"    ;;
-    s12sp2)	CONF="isc mr    Devel:zypp:SLE12SP2	SUSE:SLE-12-SP2:Update			$SOLV_STACK"    ;;
+    s12sp3)	CONF="isc mr    Devel:zypp:SLE12SP3	SUSE:SLE-12-SP3:Update			$SOLV_STACK"    ;;
+    #s12sp2)	CONF="isc mr    Devel:zypp:SLE12SP2	SUSE:SLE-12-SP2:Update			$SOLV_STACK"    ;;
     #s12sp1)	CONF="isc mr    Devel:zypp:SLE12SP1	SUSE:SLE-12-SP1:Update			$SOLV_STACK"    ;;
     #s12)	CONF="isc mr	Devel:zypp:SLE12	SUSE:SLE-12:Update			$SOLV_STACK"	;;
 
