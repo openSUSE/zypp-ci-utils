@@ -125,15 +125,12 @@ function oscautosubmittprj()
     s15sp2)
       echo "s15sp3 s15sp4 s15sp5 s15sp6"
       ;;
-    s12sp2)
-      echo "s12sp3"
-      ;;
   esac
 }
 
 function print_oscconf()
 {
-  OSCCONFS="head alp s15sp6 s15sp5 s15sp4 s15sp3 s15sp2 s12sp3 s12sp2 s11ltss"
+  OSCCONFS="head alp s15sp6 s15sp5 s15sp4 s15sp3 s15sp2 s12sp3 s11ltss"
   for CFG in $OSCCONFS; do
     get_oscconf $CFG
     S="$(printf "  %-13s %-5s %-25s -(%s)-> %-25s\n" "$CFG" "$OSC" "$SPRJ" "$OSCSUB" "$TPRJ")"
