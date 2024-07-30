@@ -1,7 +1,0 @@
-#! /bin/bash
-set -e
-cd hudson/workspace/zypp/$L
-for P in 10-libsolv 20-libzypp 30-zypper 510-libzypp-bindings 520-libzypp-testsuite-tools; do
-  cd $P/build
-
-done
