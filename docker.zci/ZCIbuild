@@ -281,6 +281,7 @@ function cmd_make()
 
 	    OBS_PRJ=''
 	    case "$PRJ" in
+		head)		OBS_PRJ="zypp:Head" ;;
 		s12sp2)		OBS_PRJ="zypp:SLE-12-SP2-Branch" ;;
 		s11ltss)	OBS_PRJ="zypp:SLE-11-SP3-Branch" ;;
 		# LibertyLinux - RES
