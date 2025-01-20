@@ -69,6 +69,8 @@ function cnf_git_branch()
 	s12sp1)	if [ "$PKG" == "libsolv" ]; then echo "0.6.x"; else echo "SuSE-SLE-12-SP1-Branch"; fi ;;
 	s12)	if [ "$PKG" == "libsolv" ]; then echo "0.6.x"; else echo "SuSE-SLE-12-Branch"; fi ;;
 	s11ltss)if [ "$PKG" == "sat-solver" ]; then echo "master"; else echo "SuSE-SLE-11-SP3-Branch"; fi ;;
+	# LibertyLinux - RES
+	res9) echo "SuSE-RES-9-Branch";;
 	# unknown
 	*)
 	    errexit "NO GIT BRANCH configured for PRJ: $PRJ"
@@ -243,7 +245,7 @@ function cmd_make()
     {
 	cd $BUILDDIR
 	MAKE="make -j 8"
-	if [ "$PRJ" == "s11ltss" ]; then
+	if [ "$PRJ" == "s11ltss" -o "$PRJ" == "res9" ]; then
 	    Recho "Make disabled for s11ltss! Fix buildsystem."
 	else
 	    $MAKE
@@ -281,6 +283,8 @@ function cmd_make()
 	    case "$PRJ" in
 		s12sp2)		OBS_PRJ="zypp:SLE-12-SP2-Branch" ;;
 		s11ltss)	OBS_PRJ="zypp:SLE-11-SP3-Branch" ;;
+		# LibertyLinux - RES
+		res9)		OBS_PRJ="zypp:jezypp:SuSE-RES-9-Branch" ;;
 		# unknown
 		*)
 		    errexit "NO OBS PRJ configured for PRJ: $PRJ"
