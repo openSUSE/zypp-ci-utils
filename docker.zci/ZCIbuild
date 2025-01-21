@@ -32,6 +32,25 @@ function hasLocalChanges()	{ [[ $(git status --porcelain --untracked-files=no) ]
 function branch2hash()		{ git log --format=format:"%H" HEAD^..HEAD; }
 function branch2comm()		{ git log --pretty=reference HEAD^..HEAD; }
 ################################################################################
+# git : zypp-solver-testcase-runner | obs : libzypp-testsuite-tools
+function cnf_git_pkgname()	# translate ARG -> git name
+{
+    case "$1" in
+	testsuite|libzypp-testsuite-tools)
+	    echo "zypp-solver-testcase-runner";;
+	*)
+	    echo "$1";;
+    esac
+}
+function cnf_obs_pkgname()	# translate git name -> obs name for submitt
+{
+    case "$1" in
+	zypp-solver-testcase-runner)
+	    echo "libzypp-testsuite-tools";;
+	*)
+	    echo "$1";;
+    esac
+}
 function cnf_git_repo()
 {
     case "$PKG" in
@@ -41,7 +60,8 @@ function cnf_git_repo()
 	zypper)			echo "git@github.com:openSUSE/$PKG.git";;
 	# non-stack projects
 	zypp-plugin)		echo "git@github.com:openSUSE/$PKG.git";;
-	libzypp-testsuite)	echo "git@github.com:openSUSE/zypp-solver-testcase-runner.git";;
+	zypp-solver-testcase-runner)
+				echo "git@github.com:openSUSE/zypp-solver-testcase-runner.git";;
 	# foreign projects (usually based on stack)
 	libyui)			echo "https://github.com/libyui/libyui.git";;
 	packagekit)		echo "https://github.com/hughsie/PackageKit.git";;
@@ -292,7 +312,7 @@ function cmd_make()
 		    ;;
 	    esac
 
-	    OSCDIR="$ARTIFACTSROOT/$OBS_PRJ/$PKG"
+	    OSCDIR="$ARTIFACTSROOT/$OBS_PRJ/$(cnf_obs_pkgname "$PKG")"
 	    if [ -d "$OSCDIR" ]; then
 		Cecho "-> $OSCDIR"
 		cd "$OSCDIR"
@@ -368,7 +388,8 @@ function drive_cmd()
     [ -d "$PRJ_ROOT" ] || errhelp "ENODIR PRJ_ROOT: $PRJ_ROOT"
 
     Yecho ":$@"
-    for PKG in "$@"; do
+    for ARG in "$@"; do
+	PKG="$(cnf_git_pkgname "$ARG")"
 	case "$PKG" in
 	    stack)
 		Yecho "$PRJ: $(cnf_solvstack)"
