@@ -47,6 +47,7 @@ cd "$CI_ROOT"
 [ -d BUILD ]     || mkdir BUILD
 
 BUILD_PKGS=""
+SKIP_TEST_PKGS=""
 
 for PKG in $CI_PKGS; do
   MBRANCH="$(pkgGitBranch "$PKG")"
@@ -80,6 +81,7 @@ for PKG in $CI_PKGS; do
   ATAG="$PKG-${V_CURR}"
   if [ -e "$ATAG" ]; then
     Gecho "$ATAG already uploaded to OBS"
+    SKIP_TEST_PKGS="$SKIP_TEST_PKGS $PKG"
     continue
   else
     Mecho "$ATAG needs to be built"
@@ -142,10 +144,14 @@ for PKG in $BUILD_PKGS; do
     libsolv|libzypp|zypper)
       $MAKE
       sudo make install
-      TESTD="tests"
-      [ -d "$TESTD" ] || TESTD="test"   # libsolv
-      $MAKE -C "$TESTD"
-      make test
+      if grep -qw "$PKG" <<<"$SKIP_TEST_PKGS"; then
+	Gecho "Skipping tests: $PKG already uploaded to OBS"
+      else
+	TESTD="tests"
+	[ -d "$TESTD" ] || TESTD="test"   # libsolv
+	$MAKE -C "$TESTD"
+	make test
+      fi
       make srcpackage_local
       ;;
     zypp-plugin)
