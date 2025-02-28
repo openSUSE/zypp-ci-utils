@@ -1,0 +1,711 @@
+#! /usr/bin/python3
+
+import sys, os, re, glob, time
+import subprocess, traceback
+
+from PyQt5.QtCore    import *
+from PyQt5.QtGui     import *
+from PyQt5.QtWidgets import *
+
+DefaultIcon = "/home/suma/suse/zypp-ci-utils/tools/zosc/zypp.png"
+#======================================================================
+def widgetSetTextFG( w, color ):
+    p = w.palette()
+    p.setColor( QPalette.WindowText, color )
+    w.setPalette( p )
+
+def widgetSetBG( w, color ):
+    w.setAutoFillBackground( True )
+    p = w.palette()
+    p.setColor( QPalette.Window, color )
+    w.setPalette( p )
+
+def em( font ):
+    return QFontMetrics(font).size( Qt.TextSingleLine, "m" ).width()
+
+class ThreadPoolMon( QLabel ):
+    ''' '''
+    def __init__( self ):
+        super().__init__()
+
+    @pyqtSlot()
+    def update( self ):
+        num = QThreadPool.globalInstance().activeThreadCount()
+        self.setText( f"Running: {num}" )
+        self.setEnabled( num )
+
+class CenteredFrame( QFrame ):
+    def __init__( self, content ):
+        super().__init__()
+        self.content = content
+        hl = QHBoxLayout()
+        if issubclass( type(content), QWidget ):
+            hl.insertWidget( 0, content, 0, Qt.AlignCenter )
+        else:
+            hl.insertLayout( 0, content, 0, Qt.AlignCenter )
+        self.setLayout( hl )
+        return
+
+class Worker( QRunnable ):
+    ''' '''
+    class __Sigconnect( QObject ):
+        started     = pyqtSignal()          # No data
+        result      = pyqtSignal(object)    # data returned from processing, anything
+        error       = pyqtSignal(tuple)     # ( exctype, value, traceback.format_exc() )
+        finished    = pyqtSignal()          # No data
+        def __init__( self ):
+            super().__init__()
+
+    def __init__( self, fn, *args, **kwargs ):
+        super().__init__()
+        self._fn = fn
+        self._args = args
+        self._kwargs = kwargs
+        self.signals = self.__Sigconnect()
+
+    @pyqtSlot()
+    def run( self ):
+        self.signals.started.emit() # Go...
+        try:
+            result = self._fn( *self._args, **self._kwargs )
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit( (exctype, value, traceback.format_exc()) )
+        else:
+            self.signals.result.emit( result )  # Return the result
+        finally:
+            self.signals.finished.emit()  # Done
+
+#======================================================================
+Config = (
+    ( "head", (
+        ( "osc", "zypp:Head" ),
+        ( "isc", "Devel:zypp:ALP" ),
+        ) ),
+    ( "tw", (
+        ( "osc", "zypp:TW" ),
+        ) ),
+#    )
+#X = (
+    ( "s15", (
+        ( "isc", "Devel:zypp:SLE15SP6" ),
+        ( "isc", "Devel:zypp:SLE15SP5" ),
+        ( "isc", "Devel:zypp:SLE15SP4" ),
+        ( "isc", "Devel:zypp:SLE15SP3" ),
+        ( "isc", "Devel:zypp:SLE15SP2" ),
+        #( "isc", "Devel:zypp:SLE15SP1" ),
+        #( "isc", "Devel:zypp:SLE15" ),
+        ) ),
+    ( "s12", (
+        ( "isc", "Devel:zypp:SLE12SP5" ),
+        ( "isc", "Devel:zypp:SLE12SP4" ),
+        ( "isc", "Devel:zypp:SLE12SP3" ),
+        ( "isc", "Devel:zypp:SLE12SP2" ),
+        #( "isc", "Devel:zypp:SLE12SP1" ),
+        #( "isc", "Devel:zypp:SLE12" ),
+        ) ),
+    ( "s11", (
+        ( "isc", "Devel:zypp:SLE11SP3" ),
+        ) ),
+    )
+
+FocusPkgs = ( "libsolv", "libzypp", "zypper" )
+# IgnorePkgs = Devel:zypp:SLE11SP3: libzypp-bindings zypp-plugin ATM hardcoded in PKGStatusWidget.setStatus
+#======================================================================
+class PRJ( Worker ):
+    ''' '''
+    # (
+    # ( "openSUSE_Factory x86_64 (building)", ( ("libsolv","."), ("libzypp","s"), ("zypper","%") ) ),
+    # ( "openSUSE_Factory i586....
+    # )
+    rxPkg = re.compile( '( \|)* ([^ ]+)$' )
+
+    def __init__( self, prj, obs ):
+        super().__init__( self.runOscPr, obs, prj )
+        self.setAutoDelete( False )
+        self.obs = obs
+        self.prj = prj
+
+    @property
+    def serverUrl( self ):
+        if self.obs == "osc":
+            return "https://build.opensuse.org/public"
+        elif self.obs == "isc":
+            return "https://build.suse.de"
+
+    def buildlogUrl( self, repo, arch, pkg ):
+        # https://build.opensuse.org/public/build/zypp:Head/openSUSE_Tumbleweed/x86_64/libzypp-testsuite-tools/_log
+        # https://build.suse.de/build/Devel:zypp:SLE15SP4/SUSE_SLE-15-SP4_Update/x86_64/libyui:libyui-qt-rest-api/_log
+        return f"{self.serverUrl}/build/{self.prj}/{repo}/{arch}/{pkg}/_log"
+
+    @pyqtSlot()
+    def retrieveBuildStatus( self ):
+        QThreadPool.globalInstance().start( self )
+
+    @classmethod
+    def feed( cls, cmd ):
+        return subprocess.check_output( cmd, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL, universal_newlines=True ).split('\n')
+
+    @classmethod
+    def runOscPr( cls, obs, prj ):
+        cmd = [obs, "pr", "-q", prj]
+        pkgs = []
+        result = []
+        for l in cls.feed( cmd ):
+            m = re.match( cls.rxPkg, l )
+            if m:
+                pkgs.append( m[2] )
+            elif len(l):
+                repo = l[2*len(pkgs)+2:]
+                stati = []
+                for i in range(len(pkgs)):
+                    di = (2*i)+1
+                    stati.append( ( pkgs[i], l[di:di+1] ) )
+                result.append( ( repo, stati ) )
+        return result
+
+#======================================================================
+class PRJGroup( object ):
+    ''' '''
+    def __init__( self, label, prjs ):
+        super().__init__()
+        self.label = label
+        self.prjs  = [ PRJ(prj,obs) for obs,prj in prjs ]
+
+#======================================================================
+class CFG( object ):
+    ''' '''
+    def __init__( self, cfg ):
+        super().__init__()
+        self.groups = [ PRJGroup(label,prjs) for label,prjs in cfg ]
+
+#======================================================================
+class PKGSep( QWidget ):
+    ''' '''
+    def __init__( self, focus=False ):
+        super().__init__()
+        p = self.palette()
+        p.setColor( QPalette.WindowText, Qt.black )
+        if focus:
+            p.setColor( QPalette.Base, self.focusColor( p.color( QPalette.Base ) ) )
+            p.setColor( QPalette.AlternateBase, self.focusColor( p.color( QPalette.AlternateBase ) ) )
+        self.setPalette( p )
+
+    @staticmethod
+    def focusColor( color ):
+        return QColor( max(0,color.red()-10), color.green(), max(0,color.blue()-10) )
+
+    def paintEvent( self, event ):
+        rect = event.rect()
+        painter = QPainter( self )
+        painter.setPen( self.palette().color( QPalette.WindowText ) );
+        painter.fillRect( rect, self.palette().color( QPalette.Base ) )
+        painter.drawLine( rect.center().x(), rect.top(), rect.center().x(), rect.top()+rect.height() )
+
+class PRJSep( QWidget ):
+    ''' '''
+    def __init__( self ):
+        super().__init__()
+        p = self.palette()
+        p.setColor( QPalette.WindowText, Qt.darkBlue )
+        p.setColor( QPalette.Disabled, QPalette.WindowText, Qt.darkMagenta )
+        self.setPalette( p )
+
+    def paintEvent( self, event ):
+        rect = event.rect()
+        painter = QPainter( self )
+        painter.setPen( self.palette().color( QPalette.WindowText ) )
+        painter.fillRect( rect, self.palette().color( QPalette.Base ) )
+        l = rect.left()
+        r = rect.left()+rect.width()
+        c = rect.center().y()
+        painter.drawLine( l, c-1, r, c-1 )
+        painter.drawLine( l, c+1, r, c+1 )
+
+#======================================================================
+class BuildStatus( object ):
+    ''' '''
+    building  = 0   # don't know yet
+    good      = 1
+    undecided = 2
+    failed    = 3
+    colors    = [ Qt.gray, Qt.black, Qt.magenta, Qt.red ]
+
+    def __init__( self, widget=None  ):
+        super().__init__()
+        self._widget = widget
+        self._status = None
+
+    @property
+    def status( self ):
+        return self._status
+
+    @status.setter
+    def status( self, val ):
+        if self._status != val:
+            self._status = val
+            if self._widget is not None:
+                self._widget.setForeground( QBrush( self.color ) )
+
+    @property
+    def color( self ):
+        return self.colors[self.status]
+
+    @classmethod
+    def newStati( cls ):
+        return [0,0,0,0]
+
+    def updateStati( self, stati ):
+        stati[self._status] = stati[self._status] + 1
+
+    def updateFromStati( self, stati ):
+        if stati[BuildStatus.failed]:
+            val = BuildStatus.failed
+        elif stati[BuildStatus.undecided]:
+            val = BuildStatus.undecided
+        elif stati[BuildStatus.building]:
+            val = BuildStatus.building
+        else:
+            val = BuildStatus.good
+        if self.status != val:
+            self.status = val
+            return True
+
+class PKGWidget( QTableWidgetItem ):
+    ''' '''
+    def __init__( self, ident ):
+        super().__init__( ident )
+        self.ident = ident
+        self.sepw  = PKGSep( ident in FocusPkgs )
+        pal = self.sepw.palette()
+        self.setForeground( pal.brush( QPalette.WindowText ) )
+        self.setBackground( pal.brush( QPalette.Base ) )
+
+class PKGStatusWidget( QTableWidgetItem ):
+    ''' '''
+    _statcfg = {
+        "?": ( BuildStatus.building,  "buildstatus not available (only new packages)" ),
+        "b": ( BuildStatus.building,  "blocked"      ),
+        "s": ( BuildStatus.building,  "scheduled"    ),
+        "d": ( BuildStatus.building,  "dispatching"  ),
+        "%": ( BuildStatus.building,  "building"     ),
+        "f": ( BuildStatus.building,  "finished"     ),
+        "S": ( BuildStatus.building,  "signing"      ),
+        ".": ( BuildStatus.good,      "succeeded"    ),
+        " ": ( BuildStatus.good,      "disabled"     ),
+        "F": ( BuildStatus.failed,    "failed"       ),
+        "B": ( BuildStatus.undecided, "broken"       ),
+        "U": ( BuildStatus.undecided, "unresolvable" ),
+        "L": ( BuildStatus.undecided, "locked"       ),
+        "x": ( BuildStatus.undecided, "excluded"     ),
+        }
+
+    def __init__( self, ident, repow ):
+        super().__init__()
+        self.repow = repow
+        self.setTextAlignment( Qt.AlignCenter )
+        if ident in FocusPkgs:
+            color = QPalette().color( QPalette.AlternateBase )
+            self.setBackground( QBrush( PKGSep.focusColor( color ) ) )
+        else:
+            self.setBackground( QPalette().brush( QPalette.AlternateBase ) )
+        self.setFlags( Qt.ItemIsEnabled )
+        self.ident = ident
+        self._buildStatus = BuildStatus( self )
+
+        if self.repow.prj.prj == "Devel:zypp:SLE11SP3":
+            if self.ident == "libzypp-bindings" or self.ident == "zypp-plugin":
+                self._doIgnore = True
+
+    @property
+    def buildStatus( self ):
+        return self._buildStatus
+
+    def setStatus( self, status ):
+        if "_doIgnore" in self.__dict__:
+            status = " "
+        statcfg = self._statcfg[status]
+        self.setText( status )
+        self._buildStatus.status = statcfg[0]
+        self.setToolTip( f"{self.ident}: {statcfg[1]}" )
+
+    @property
+    def buildlogUrl( self ):
+        return self.repow.buildlogUrl( self.ident )
+
+class REPOWidget( QTableWidgetItem ):
+    ''' '''
+    # U U U . U  SLE_15_Update x86_64 (published)
+    def __init__( self, repo, prj, ident, arch ):
+        super().__init__( repo )
+        self._buildStatus = BuildStatus( self )
+        self.ident = ident
+        self.arch = arch
+        self.prj = prj
+        self.pkgs = {}
+
+    @property
+    def buildStatus( self ):
+        return self._buildStatus
+
+    def processResult( self, repo, pkgs ):
+        self.setText( repo )    # repo is volatile (ident+status)
+        stati = BuildStatus.newStati()
+        for pkg,status in pkgs:
+            pkgw = self._getPkg( pkg )
+            pkgw.setStatus( status )
+            pkgw.buildStatus.updateStati( stati )
+        #( status changed?, sill building? )
+        return ( self._buildStatus.updateFromStati( stati ), stati[BuildStatus.building] )
+
+    def _getPkg( self, ident ):
+        try:
+            return self.pkgs[ident]
+        except KeyError:
+            pkgw = PKGStatusWidget( ident, self )
+            tw = self.tableWidget()
+            c = tw.pkgColumn(ident) # may change our row!
+            tw.setItem( self.row(), c, pkgw )
+            self.pkgs[ident] = pkgw
+            return pkgw
+
+    def setEnabled( self, yn, pal ): # driven by PRJWidget
+        if yn:
+            self.setBackground( pal.brush( QPalette.AlternateBase ) )
+        else:
+            self.setBackground( pal.brush( QPalette.Base ) )
+
+    def buildlogUrl( self, pkg ):
+        return self.prj.buildlogUrl( self.ident, self.arch, pkg )
+
+class PRJWidget( QTableWidgetItem ):
+    ''' '''
+    #----------  zypp:SLE-15-Branch
+    # U U U . U  SLE_15_Update x86_64 (published)
+    # . . . . .  openSUSE_Leap_15.0_Update x86_64 (published)
+    def __init__( self, prj ):
+        super().__init__( prj.prj )
+        self.prj = prj
+        self.repos = {}
+        self.sepw  = PRJSep()
+        prj.signals.error.connect( lambda result : self.processError( result ) )
+        prj.signals.result.connect( lambda result : self.processResult( result ) )
+
+        #QTimer.singleShot( 0, lambda : self.retrieveBuildStatus() )
+        #return
+        t = self._timer = QTimer()
+        t.setSingleShot( True )
+        t.timeout.connect( lambda : self.retrieveBuildStatus() )
+        t.start( 0 )
+
+    @pyqtSlot()
+    def retrieveBuildStatus( self ):
+        if self.flags() & Qt.ItemIsEnabled:
+            self._timer.stop()
+            self.setEnabled( False )
+            self.prj.retrieveBuildStatus()
+
+    # @pyqtSlot(tuple) but it's no QObject
+    def processError( self, result ):
+        print( "***", result )
+        self.setEnabled( True )
+        self.setForeground( QBrush( Qt.red ) )
+        self.setToolTip( str(result[1]) )
+
+    # @pyqtSlot(object) but it's no QObject
+    def processResult( self, result ):
+        buildStatusChanged = False
+        stillBuilding = False
+        for repo,pkgs in result:
+            repow = self._getRepo( repo )
+            changed,building = repow.processResult( repo, pkgs )
+            if changed:
+                buildStatusChanged = True
+            if building:
+                stillBuilding = True
+        self.tableWidget().resizeColumnToContents( self.column() )
+        self.tableWidget().resizeColumnsToContents()
+        self.tableWidget().resizeRowsToContents()
+        if buildStatusChanged:
+            self.tableWidget().updateBuildStatus()
+        self.setEnabled( True )
+        if stillBuilding:
+            self.setBackground( QBrush( QColor( "#daff48" ) ) )
+            self._timer.start( 60000 )
+            self.setToolTip( "autoreloaded while building" )
+
+
+    def setEnabled( self, yn ):
+        if yn:
+            self.setFlags( Qt.ItemIsEnabled )
+            self.sepw.setEnabled( True )
+        else:
+            self.setFlags( Qt.NoItemFlags )
+            self.sepw.setEnabled( False )
+        pal = self.sepw.palette()
+        self.setForeground( pal.brush( QPalette.WindowText ) )
+        self.setBackground( pal.brush( QPalette.Base ) )
+        for r in self.repos.values():
+            r.setEnabled( yn, pal )
+        self.setToolTip( "" )
+
+    def _getRepo( self, repo ):
+        # SLE_15_Update x86_64 (published)
+        # ^^^^^^^^^^^^^^^^^^^^ is ident
+        ident = repo.split( ' (', maxsplit=1 )[0]
+        try:
+            return self.repos[ident]
+        except KeyError:
+            detail = ident.split( ' ' ) # ident arch
+            repow = REPOWidget( repo, self.prj, detail[0], detail[1] )
+            tw = self.tableWidget()
+            r = self.row()+len(self.repos)+1
+            tw.insertRow( r )
+            tw.setItem( r, self.column(), repow )
+            self.repos[ident] = repow
+            return repow
+
+#======================================================================
+class PRJGroupTable( QTableWidget ):
+    ''' '''
+    buildStatusChanged = pyqtSignal(object) # new BUildStatus
+    buildlogRequested = pyqtSignal(str)     # buildlog URL
+    # libsolv
+    # | libzypp
+    # | | libzypp-testsuite-tools
+    # | | | zypp-plugin
+    # | | | | zypper
+    #----------  zypp:SLE-15-Branch
+    # U U U . U  SLE_15_Update x86_64 (published)
+    # . . . . .  openSUSE_Leap_15.0_Update x86_64 (published)
+    #----------  zypp:SLE-15-SP1-Branch
+    # . . . . .  SLE_15_SP1_Update x86_64 (published)
+    # . . . . .  openSUSE_Leap_15.1_Update x86_64 (published)
+    #----------  zypp:SLE-15-SP2-Branch
+    # . . . . .  SLE_15_SP2_Update x86_64 (published)
+    # . . . . .  openSUSE_Leap_15.2_Update x86_64 (published)
+    #----------  zypp:SLE-15-SP3-Branch
+    # . . . . .  SLE_15_SP3_Update x86_64 (published)
+    # . . . . .  openSUSE_Leap_15.3_Update x86_64 (published)
+    def __init__( self, grp ):
+        super().__init__( len(grp.prjs), 1 )
+        self.verticalHeader().hide()
+        self.horizontalHeader().hide()
+        #self.horizontalHeader().setStretchLastSection( True )
+        self.setSelectionMode( QAbstractItemView.NoSelection )
+        self.setEditTriggers( QAbstractItemView.NoEditTriggers )
+        self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
+        self.setHorizontalScrollBarPolicy( Qt.ScrollBarAsNeeded )
+        self._buildStatus = BuildStatus()
+        self.itemDoubleClicked.connect( self.retrieveBuildStatus )
+
+        self.setContentsMargins( 0,0,0,0 )
+        self.setViewportMargins( 0,0,0,0 )
+
+        self._pkgs = []
+        self._prjs = []
+        for r,prj in zip(range(len(grp.prjs)),grp.prjs):
+            p = PRJWidget( prj )
+            self.setItem( r, 0, p )
+            self._prjs.append( p )
+        self.resizeColumnToContents( 0 )
+
+    def pkgColumn( self, ident ):
+        try:
+            return self._pkgs.index( ident )
+        except ValueError:
+            at = self._insertPkgAt( ident )
+            self.insertRow( at )
+            self.insertColumn( at )
+            self.setColumnWidth( at, self.em );
+            tw = PKGWidget( ident )
+            self.setItem( at, at, tw )
+            # adjust spans
+            self._adjustPKGSeps( at )
+            self._adjustPRJSeps( at )
+            self._pkgs.insert( at, ident )
+            return at
+
+    def _adjustPKGSeps( self, at ):
+        self.setSpan( at, at, 1, self.columnCount()-at )
+        if at == len(self._pkgs):   # at end add separator to previous column
+            if at > 0: self.setCellWidget( at, at-1, self.item( at-1, at-1 ).sepw )
+        else:                       # add own separator
+            self.setCellWidget( at+1, at, self.item( at, at ).sepw )
+        # adjust span (and also in all columns before)
+        for i in range(0,min(at+1,len(self._pkgs)-1)):
+            self.setSpan( i+1, i, len(self._pkgs)-i, 1 )
+
+    def _adjustPRJSeps( self, at ):
+        if len(self._pkgs) == 0:
+            for p in self._prjs:
+                self.setCellWidget( p.row(), 0, p.sepw )
+        elif at == 0:
+            for p in self._prjs:
+                self.setSpan( p.row(), 1, 1, 1 )
+                self.setSpan( p.row(), 0, 1, len(self._pkgs)+1 )
+        elif at == len(self._pkgs):
+            for p in self._prjs:
+                self.setSpan( p.row(), 0, 1, len(self._pkgs)+1 )
+
+    def _insertPkgAt( self, ident ):
+        for i in range(0,len(self._pkgs)):
+            if self._pkgs[i] > ident:
+                return i
+        return len(self._pkgs)
+
+    @pyqtSlot(QTableWidgetItem)
+    def retrieveBuildStatus( self, item=None ):
+        if issubclass( type(item), PKGStatusWidget ):
+            self.buildlogRequested.emit( item.buildlogUrl )
+            print( item.buildlogUrl )
+        elif issubclass( type(item), PRJWidget ):
+            print( "++", item.row(), item.column() )
+            item.retrieveBuildStatus()
+        else:
+            for p in self._prjs:
+                p.retrieveBuildStatus()
+
+    def updateBuildStatus( self ):
+        stati = BuildStatus.newStati()
+        for p in self._prjs:
+            for r in p.repos.values():
+                r.buildStatus.updateStati( stati )
+        if self._buildStatus.updateFromStati( stati ):
+            self.buildStatusChanged.emit( self._buildStatus )
+
+    @property
+    def em( self ):
+        try:
+            return self._em
+        except AttributeError:
+            self._em = em( self.font() )
+            return self._em
+
+#======================================================================
+class MainWindow( QMainWindow ):
+    ''' '''
+    def __init__( self ):
+        super().__init__()
+        self.setFocusPolicy( Qt.StrongFocus )
+        self.statusBar()
+
+        w = QPushButton( "all tabs" )
+        w.clicked.connect( self.updateAllTabs )
+        self.statusBar().addPermanentWidget( w )
+
+        w = QPushButton( "update tab" )
+        w.clicked.connect( self.updateCurrentTab )
+        self.statusBar().addPermanentWidget( w )
+
+        mon = ThreadPoolMon()
+        self.statusBar().addPermanentWidget( mon )
+
+        tab = self._tab = QTabWidget()
+        self.setCentralWidget( tab )
+
+        cfg = CFG( Config )
+        for grp,idx in zip(cfg.groups,range(len(cfg.groups))):
+            table = PRJGroupTable(grp)
+            tab.addTab( CenteredFrame(table), grp.label )
+            table.buildStatusChanged.connect( lambda buildstatus, tab=tab, idx=idx : tab.tabBar().setTabTextColor( idx, buildstatus.color ) )
+            table.buildlogRequested.connect( self.onBuildlogRequested )
+            for prj in grp.prjs:
+                prj.signals.started.connect( mon.update )
+                prj.signals.finished.connect( mon.update )
+
+        #tab.currentChanged.connect( lambda idx: print( "currentChanged", idx ) )
+
+    @pyqtSlot()
+    def updateCurrentTab( self ):
+        self._tab.currentWidget().content.retrieveBuildStatus()
+
+    @pyqtSlot()
+    def updateAllTabs( self, alltabs=False ):
+        for i in range(self._tab.count()):
+            self._tab.widget(i).content.retrieveBuildStatus()
+
+    @pyqtSlot(str)
+    def onBuildlogRequested( self, url):
+        clipboard = QApplication.clipboard()
+        clipboard.setText( url )
+        if clipboard.supportsSelection():
+            clipboard.setText( url, QClipboard.Selection )
+        self.statusBar().showMessage( url, 3000 )
+
+    def toggleFullScreen( self ):
+        if self.windowState() & ( Qt.WindowFullScreen | Qt.WindowMaximized ):
+            self.showNormal()
+        else:
+            self.showFullScreen()
+
+    def start( self, argv ):
+        print( "*****", "start...", argv )
+        #self._startworker();
+
+    @pyqtSlot()
+    def quit( self ):
+        print( "*****", "quit..." )
+        self.close()
+        QCoreApplication.quit()
+
+    @pyqtSlot()
+    def atq( self ):
+        # about to quit...
+        print( "*****", "atq..." )
+        self.close()
+        print( "*****", "atq...wait for running threads to complete..." )
+        QThreadPool.globalInstance().clear()
+        print( "*****", "atq DONE" )
+
+    @property
+    def keyPressEventTable( self ):
+        try:
+            return self._keyPressEventTable
+        except AttributeError:
+            self._keyPressEventTable = {
+                Qt.NoModifier : {
+                    Qt.Key_Escape       : self.quit,
+                    Qt.Key_F11          : self.toggleFullScreen,
+                    Qt.Key_F12          : self.updateCurrentTab,
+                    },
+                Qt.ControlModifier : {
+                    Qt.Key_Q            : self.quit,
+                    Qt.Key_F12          : self.updateAllTabs,
+                    },
+                }
+        return self._keyPressEventTable
+
+    def keyPressEvent( self, event ):
+        if event.isAutoRepeat():
+            return
+        try:
+            self.keyPressEventTable[event.modifiers()][event.key()]()
+        except KeyError:
+            event.setAccepted( False )
+
+#======================================================================
+def main():
+    app = QApplication( sys.argv )
+    appname = os.path.basename( sys.argv[0] )
+
+    main = MainWindow()
+    main.setWindowTitle( appname )
+    main.setWindowIconText( appname )
+    main.setWindowIcon( QIcon(DefaultIcon) )
+    main.setMinimumSize( 60, 20 )
+    main.setGeometry( 65, 65, 520, 520 )
+    main.setWindowFlags( Qt.Window | Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint )
+    main.show()
+
+    app.aboutToQuit.connect( main.atq )
+    #app.lastWindowClosed.connect( main.lwc )
+    QTimer.singleShot( 0, lambda : main.start( sys.argv[1:] ) )
+    sys.exit( app.exec_() )
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print( "OOps:", e )
