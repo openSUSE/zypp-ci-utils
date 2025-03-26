@@ -185,7 +185,7 @@ function oscmrstats()
     done
     TBZ="$($OSC ls $TPP | grep '\.tar\.')"
     printf "%-40s| " "$_P"
-    $OSC log $TPP | head -n 2 | tail -n 1 | noTZ | sed "s/unknown/$TBZ/"
+    $OSC log $TPP 2>/dev/null | head -n 2 | tail -n 1 | noTZ | sed "s/unknown/$TBZ/"
   done
 }
 
@@ -200,7 +200,7 @@ function oscmrstats_old()
     LNK="$($OSC ls "$PRJ" "$_P" | grep '^# ->')"
     TBZ="$($OSC ls "$PRJ" "$_P" | grep '\.tar\.')"
     printf "%-40s| " "$_P"
-    $OSC log "$PRJ" "$_P" | head -n 2 | tail -n 1 | sed "s/unknown/$TBZ$LNK/"
+    $OSC log "$PRJ" "$_P" 2>/dev/null | head -n 2 | tail -n 1 | sed "s/unknown/$TBZ$LNK/"
   done
 }
 
