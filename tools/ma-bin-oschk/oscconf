@@ -40,8 +40,11 @@ function get_oscconf()
 
     alp)	CONF="isc xs	Devel:zypp:ALP		SUSE:SLFO:Main				$SOLV_STACK"	;;
 
-    Micro6.0)	CONF="isc sr	Devel:zypp:ALP		SUSE:ALP:Source:Standard:1.0		$SOLV_STACK"	;;
-    Micro6.1)	CONF="isc sr	Devel:zypp:ALP		SUSE:SLFO:1.1				$SOLV_STACK"	;;
+    # ================================================================================
+    # https://bugzilla.suse.com/show_bug.cgi?id=1243457#c14 ff:
+    # We submitt Micro6.x together with SLE15(!) mr.
+    Micro6.0)	CONF="isc xs	Devel:zypp:ALP		SUSE:ALP:Source:Standard:1.0		$SOLV_STACK"	;;
+    Micro6.1)	CONF="isc xs	Devel:zypp:ALP		SUSE:SLFO:1.1				$SOLV_STACK"	;;
 
     # ================================================================================
 
@@ -119,13 +122,15 @@ function oscautosubmittprj()
   # and let maintenance propagate it to higher SPs which share
   # the same code.
   # Wherever maintenance can't, we keep the stuff in sync upon oscsubmitt:
+  # - https://bugzilla.suse.com/show_bug.cgi?id=1243457#c14 ff:
+  #   We submitt Micro6.x together with SLE15(!) mr.
   local SPRJ="$1"
   case "$1" in
     head)
       echo "alp"
       ;;
     s15sp2)
-      echo "s15sp3 s15sp4 s15sp5 s15sp6"
+      echo "s15sp3 s15sp4 s15sp5 s15sp6 Micro6.0 Micro6.1"
       ;;
   esac
 }
