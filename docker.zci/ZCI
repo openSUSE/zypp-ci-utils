@@ -46,7 +46,7 @@ cd "$CI_ROOT"
 [ -d ARTIFACTS ] || mkdir ARTIFACTS
 [ -d BUILD ]     || mkdir BUILD
 
-BUILD_PKGS=""
+BUILD_PKGS="$FORCEBUILD"
 SKIP_TEST_PKGS=""
 
 for PKG in $CI_PKGS; do
@@ -118,7 +118,7 @@ for PKG in $BUILD_PKGS; do
 		;;
 	    libzypp)
 		# on head and s15
-		CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZCHUNK_COMPRESSION=1"
+		CMAKE_ARGS="$CMAKE_ARGS -DSUSE=1 -DNOSCHNICKSCHNACK=1 -DENABLE_ZCHUNK_COMPRESSION=1"
 		;;
 	    *)
 		;;

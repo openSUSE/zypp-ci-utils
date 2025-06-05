@@ -252,6 +252,7 @@ function cmd_make()
 		}
 		;;
 	    libzypp)
+	        CMAKE_ARGS="$CMAKE_ARGS -DSUSE=1 -DNOSCHNICKSCHNACK=1"
 		[ $PRJ == "head" ] && {
 		    CMAKE_ARGS="$CMAKE_ARGS -DENABLE_ZCHUNK_COMPRESSION=1"
 		}
