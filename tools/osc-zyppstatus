@@ -7,7 +7,7 @@ from PyQt5.QtCore    import *
 from PyQt5.QtGui     import *
 from PyQt5.QtWidgets import *
 
-DefaultIcon = "/home/suma/suse/zypp-ci-utils/tools/zosc/zypp.png"
+DefaultIcon = "/home/suse.git/zypp-ci-utils/tools/zosc/zypp.png"
 #======================================================================
 def widgetSetTextFG( w, color ):
     p = w.palette()
@@ -89,6 +89,7 @@ Config = (
 #    )
 #X = (
     ( "s15", (
+        ( "isc", "Devel:zypp:SLE15SP7" ),
         ( "isc", "Devel:zypp:SLE15SP6" ),
         ( "isc", "Devel:zypp:SLE15SP5" ),
         ( "isc", "Devel:zypp:SLE15SP4" ),
