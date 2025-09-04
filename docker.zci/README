@@ -1,3 +1,4 @@
+
 File .env
 =========
 
@@ -11,7 +12,7 @@ CI_ROOT_VOLUME=/Local/ZCIWorkspace
   the container. Just the OBS credentials are expected to be provided in
   CI_ROOT_VOLUME/ZCI/CONFIG/oscrc.
 
-CI_UID=216
+CI_UID=1004
 CI_GID=50
 - Ids for user/group zci inside the container. The local CI_ROOT_VOLUME should
   allow reads (ZCI) and writes (ZCIbuild).
@@ -34,10 +35,24 @@ Layout:
 
 Build
 =====
-docker compose --profile tw build
+docker compose --profile tw build [--no-cache]
 (docker system prune)
 
 RUN
 ===
 docker compose run --rm [--name ???] [-ti] zci-tw
 docker compose run --rm [--name ???] [-ti] zci-tw bash -l -c bin/ZCI
+
+
+With ~suse/bin/ZCI
+================
+# termA:
+ZCI --lock
+
+# termB:
+cd ~suse/suse.git/zypp-ci-utils/docker.zci
+docker compose run --rm --name dockerzci_zci-tw zci-tw bash
+
+# term*:
+cd ~suse/suse.git/zypp-ci-utils/docker.zci
+docker exec -ti dockerzci_zci-tw bash

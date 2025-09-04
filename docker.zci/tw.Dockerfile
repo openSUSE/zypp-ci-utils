@@ -8,7 +8,7 @@ RUN zypper --non-interactive --no-refresh --ignore-unknown in --no-recommends op
     libcurl-devel gettext-tools glib2-devel libcurl-devel libgpgme-devel libzck-devel libsigc++2-devel asciidoc \
     libexpat-devel libproxy-devel libxml2-devel libopenssl-devel popt-devel python-devel 'rubygem(asciidoctor)' \
     protobuf-devel readline-devel rpm-devel ruby-devel vsftpd yaml-cpp-devel zlib-devel bzip2 \
-    nginx FastCGI-devel
+    nginx FastCGI-devel squid
 RUN zypper --non-interactive --no-refresh --ignore-unknown in --no-recommends -- diffutils -busybox-diffutils
 # just for syncing DOCs to doc.opensuse.org
 # RUN zypper --non-interactive --no-refresh --ignore-unknown in --no-recommends rsync
