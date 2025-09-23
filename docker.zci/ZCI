@@ -148,7 +148,14 @@ for PKG in $BUILD_PKGS; do
 	Gecho "Skipping tests: $PKG already uploaded to OBS"
       else
 	TESTD="tests"
-	[ -d "$TESTD" ] || TESTD="test"   # libsolv
+	case "$PKG" in
+          libsolv)
+            TESTD="test"
+            ;;
+          libzypp)
+            TESTD="zypp/tests"
+            ;;
+	esac
 	$MAKE -C "$TESTD"
 	make test
       fi
@@ -190,7 +197,11 @@ for PKG in $BUILD_PKGS; do
 
     ${OSC} co -u "$OBSPRJ" "$PKG"
     rm -rf "$OBSPRJ/$PKG"/*.tar.bz2
-    cp -av ../BUILD/$PKG/package/* "$OBSPRJ/$PKG"
+    PKGDIR="../BUILD/$PKG/package"
+    if [ "$PKG" == "libzypp" ]; then
+      PKGDIR="../BUILD/$PKG/zypp/package"
+    fi
+    cp -av "$PKGDIR"/* "$OBSPRJ/$PKG"
     pushd "$OBSPRJ/$PKG"
 
     ${OSC} addremove
