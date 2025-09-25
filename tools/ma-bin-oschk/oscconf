@@ -46,7 +46,7 @@ function get_oscconf()
 
     # ================================================================================
 
-    s15sp7)	CONF="isc xx    Devel:zypp:SLE15SP7	SUSE:SLE-15-SP7:Update			$SOLV_STACK"    ;;
+    s15sp7)	CONF="isc xm    Devel:zypp:SLE15SP7	SUSE:SLE-15-SP7:Update			$SOLV_STACK"    ;;
     s15sp6)	CONF="isc xm    Devel:zypp:SLE15SP6	SUSE:SLE-15-SP6:Update			$SOLV_STACK"    ;;
     s15sp5)	CONF="isc xm    Devel:zypp:SLE15SP5	SUSE:SLE-15-SP5:Update			$SOLV_STACK"    ;;
     s15sp4)	CONF="isc xm    Devel:zypp:SLE15SP4	SUSE:SLE-15-SP4:Update			$SOLV_STACK"    ;;
