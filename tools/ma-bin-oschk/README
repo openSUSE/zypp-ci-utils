@@ -1,6 +1,8 @@
 Backup/Source of internal OSC check and release scripts
 =======================================================
 
+Traditional obs workflow (ATM TW and Code15)
+------------------------
 For now, to avoid inconsistencies, scripts and configs are maintained at
 (git@github.com:openSUSE/zypp-ci-utils.git) in tools/ma-bin-oschk.
 
@@ -9,7 +11,37 @@ scripts scripts into their $PATH. Scripts will use REALPATH(1) to find the
 relevant configuration file and - in case of oscsubmitt - place the logs into
 the git directory.
 
-
 https://smelt.suse.de/maintained/?q=zypper may help to figure out where
 we need to send the maintenance requests to, and which are distributed
 by maintenance internally.
+
+
+New gitea workflows
+-------------------
+- Set GITEAUSER to your gitea account in the environmnet.
+- Use "giteastats --help" for hints about the setup (chek it shows you as GITEAUSER).
+- 'obs' and 'ibs' subdirectories mus exist in CWD otherwise the script exits.
+
+===[giteastats --help]==========
+PreReq:
+- GITEAUSER configured: "mlandres"
+- PKGS configured: libsolv libzypp zypper libzypp-testsuite-tools zypp-plugin
+- Set up 'git-obs' and 'git-ibs' commands to refer to src.suse and src.opensuse.
+- Create empty 'obs' and 'ibs' subdirectories we use for cloning the repos.
+- Login to src.suse and src.opensuse and fork the packages from pool/PKG.
+  (or do it on the commandline; the script will hint if a fork is missing)
+
+The script basically updates parent/factory to local factory and determines the
+difference to the potential parent PR branches. Tries to figure out if needed
+PRs are already open or need to be openend. In both cases a submission needs to
+sync local factory to origin/factory, because thet's the source of all PRs.
+Recognized PR targets are:
+    obs: parent/leap*
+    ibs: parent/slfo*
+
+Skip "obs" per default because there are no leap* branches for our packages.
+Use "-v obs all" to check obs.
+
+Without PKG args it checks the core stack only (libsolv, libzypp, zypper). Pass
+package names or use "all" to check specific packages.
+

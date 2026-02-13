@@ -1,0 +1,497 @@
+#! /bin/bash
+set -e
+
+function DBG() {
+    if (( $DEBUG )); then
+        "$@"
+    fi
+}
+function Bhead()
+{
+    if (( $# )); then
+        Becho "$(cut -c -80 <<<"$@================================================================================")"
+    else
+        Becho
+    fi
+}
+PFX="    "  # for indented printing
+
+function gitCurrentBranch()
+{ $GIT rev-parse --abbrev-ref HEAD; }
+
+function pDescribe()	# [-> _VAR branch ID]
+{
+    local B="$1"
+    local BID="$(git -C "$GDIR" describe --always --long "$B")"
+    if [[ -n $2 ]]; then
+        local -n _VAR=$2	# to return branch ids
+	_VAR="$BID"
+    else
+        Cecho "$BID $B"
+    fi
+}
+
+function pLogRange()
+{
+    local R="$1"
+    $GIT log --oneline $R
+}
+
+function pLogDiff()     #  [-> _RET 0/1 if same/differ]
+{
+    local OLD="$1"
+    local NEW="$2"
+    local -n _RET="$3"
+
+    local O N
+    pDescribe "$OLD" "O"
+    pDescribe "$NEW" "N"
+
+    Bhead "### ===[ $GDIR ]( $OLD <> $NEW )================================="
+    if [[ $O = $N ]]; then
+        _RET=0
+        Becho "$PFX""# $OLD is up-to-date with $NEW at $O"
+    else
+	local O2C=$(pLogRange "$OLD..$NEW" | wc -l)    # OLD -> common ancestor
+	local C2N=$(pLogRange "$NEW..$OLD" | wc -l)    # common ancestor -> NEW
+        local -a CMDOUT
+
+        Becho "$PFX""# $OLD at $O ->($O2C)($C2N)-> $NEW at $N"
+
+        readarray -t CMDOUT < <($GIT diff "$OLD" "$NEW" --name-status)
+        if (( ${#CMDOUT[@]} )); then
+            _RET=1
+            for X in "${CMDOUT[@]}"; do
+                case "$X" in
+                    A*)
+                        Gecho "$PFX""$X"
+                        ;;
+                    D*)
+                        Recho "$PFX""$X"
+                        ;;
+                    M*)
+                        Becho "$PFX""$X"
+                        ;;
+                    *)
+                        echo "$PFX""$X"
+                        ;;
+                esac
+            done
+        else
+            _RET=0
+            Becho "$PFX""# No difference between $OLD and $NEW"
+        fi
+
+        readarray -t CMDOUT < <($GIT diff "$OLD" "$NEW" "$PKG.changes")
+        for X in "${CMDOUT[@]}"; do
+            case "$X" in
+                ++*) ;;
+                --*) ;;
+                +*)
+                    Gecho "$PFX""$X"
+                    ;;
+                -*)
+                    Recho "$PFX""$X"
+                    ;;
+                @@*)
+                    Cecho "$PFX""$X"
+                    ;;
+                *)
+                    #echo "$PFX""$X"
+                    ;;
+            esac
+        done
+    fi
+}
+
+function pLogPRStat()   # [-> _RET 0/1 whether an own PR is open
+{
+    local OLD="$1"
+    local NEW="$2"
+    local -n _RET="$3"
+
+    local TARGET_BRANCH="${OLD#*/}"
+    local -a CMDOUT
+    readarray -t CMDOUT < <($GITOBS pr list --state open --target-branch "$TARGET_BRANCH" pool/$PKG 2>/dev/null)
+    if (( ${#CMDOUT[@]} )); then
+        _RET=0  # preliminary assume no own PR open
+        Becho "$PFX""# Pending PRs for pool/$PKG $TARGET_BRANCH:"
+        local -i MY_PR
+        for X in "${CMDOUT[@]}"; do
+            case "$X" in
+                ID*)
+                    MY_PR=1 # a new block PR data
+                    ;;
+                Author*)
+                    [[ $X =~ ": $GITEAUSER" ]] || {
+                        Mecho "$PFX""$X"" [not $GITEAUSER]"
+                        MY_PR=0
+                        continue
+                    }
+                    ;;
+                Source*)
+                    X="$(sed 's/^\(.*commit:.......\).*/\1/' <<<"$X")"
+                    [[ $X =~ ": $GITEAUSER/$PKG, branch: $NEW" ]] || {
+                        Mecho "$PFX""$X"" [not $GITEAUSER/$PKG $NEW]"
+                        MY_PR=0
+                        continue
+                    }
+                    ;;
+                Target*)
+                    X="$(sed 's/^\(.*commit:.......\).*/\1/' <<<"$X")"
+                    ;;
+                Description*)
+                    # PR data block ends
+                    if (( $MY_PR )); then
+                        _RET=1
+                        Gecho "$PFX""# It's my PR!"
+                    else
+                        Recho "$PFX""# It's a foreign PR!"
+                    fi
+                    break   # hides the description
+                    ;;
+                *)
+                    ;;
+            esac
+            echo "$PFX""$X"
+        done
+    else
+        _RET=0
+        Becho "$PFX""# No open PRs for pool/$PKG $TARGET_BRANCH"
+    fi
+}
+
+### ============================================================
+### Global vars available within the commands:
+###   OBS     "obs" or "ibs"; for git-obs to refer to the right server
+###   GITOBS  git-obs command to refer to the right server (git-obs git-ibs)
+###
+###   PKG   the package to process
+###   GDIR  "$OBS/$PKG"; subdirectory of the local clone
+###   GIT   "git -C $GDIR" git command to address the local clone
+###
+### Expecting CWD to be the parent dir of "obs" and "ibs"
+#
+function assertClone()
+{
+    [ -d "$GDIR/.git" ] || {
+	Mecho "# Create initial clone from fork ($GITOBS repo fork pool/$PKG)"
+	# Expect "$OBS" to be created manually. Don't clutter arbitrary CWDs
+	( cd "$OBS"; $GITOBS repo clone $GITEAUSER/$PKG ) || {
+	    Recho "Missing fork ($GITOBS repo fork pool/$PKG)?"
+	    return 1
+	}
+    }
+}
+
+function checkFetch()
+{
+    local THRESHOLD=$((${1:-60}))	# Threshold in minutes until next unforced fetch
+    local FETCH_LOG="$GDIR/.git/FETCH_HEAD"
+
+    if [ ! -f "$FETCH_LOG" ]; then
+	Cecho "# No fetch history found. Fetching now..."
+    else
+	if (( "$FORCE" )); then
+	    Cecho "# FORCE fetching now..."
+	elif [ -n "$(find "$FETCH_LOG" -mmin +"$THRESHOLD")" ]; then
+	    Cecho "# Last fetch was over $THRESHOLD minutes ago. Updating..."
+	else
+	    Mecho "# Fetch skipped. Data is still fresh (less than $THRESHOLD min old)."
+	    return
+	fi
+    fi
+    $GIT fetch --porcelain --all
+    Cecho "."
+}
+
+function getPRTargets() # [-> _ARRAY]
+{
+    local -n _ARRAY=$1	# to return possible PR targets
+    local PATTERN=''
+    case "$OBS" in
+	obs)
+	    PATTERN='^parent/leap'
+	    ;;
+	ibs)
+	    PATTERN='^parent/slfo'
+	    ;;
+	*)
+	    Recho "Unknown value for OBS: $OBS"
+	    return 1
+	    ;;
+    esac
+    DBG Cecho "getPRTargets $OBS : $PATTERN"
+    while read X; do
+	[[ $X =~ ^parent/HEAD ]] && continue
+	if [[ $X =~ $PATTERN ]]; then
+	    DBG Cecho "+ $X"
+	    _ARRAY+=("$X")
+	else
+	    DBG Yecho "  $X"
+	fi
+    done <<<$($GIT branch -r --list 'parent/*')
+}
+
+function assertBranch()     # [-> _ORIGIN_NEEDS_UPDATE 0/1 whether local and origin differ after update from parent
+{
+    local BRANCH="$1"
+    local -n _ORIGIN_NEEDS_UPDATE="$2"
+    local MYBRANCH="$(gitCurrentBranch)"
+    if [[ $MYBRANCH = $BRANCH ]]; then
+	DBG Cecho "# On branch $MYBRANCH"
+    else
+	Mecho "# Switching branch $MYBRANCH -> $BRANCH"
+	$GIT checkout --track origin/$BRANCH
+    fi
+
+    local P L O
+    # update local from parent
+    pDescribe parent/$BRANCH "P"
+    pDescribe $BRANCH "L"
+    [[ $P != $L ]] && {
+	Cecho "# Updating $BRANCH from parent"
+	$GIT pull parent factory
+	pDescribe $BRANCH "L"
+    }
+
+    [[ $P != $L ]] && {
+	Recho "OOPS: Not up-to date after pull: $BRANCH: parent:$P local:$L (origin:$O)"
+	retrun 1 # error out! (failed pull)
+    }
+
+    Becho -n "# Up-to date after pull: $BRANCH at $L"
+    pDescribe origin/$BRANCH "O"
+    if [[ $L != $O ]]; then
+        _ORIGIN_NEEDS_UPDATE=1
+        Recho -n " (origin:$O)"
+    else
+        _ORIGIN_NEEDS_UPDATE=0
+        Becho -n " (origin:$O)"
+    fi
+    Becho
+}
+
+function forceSyncBranch()
+{
+    local BRANCH="$1"
+    local MYBRANCH="$(gitCurrentBranch)"
+    if [[ $MYBRANCH = $BRANCH ]]; then
+	DBG Cecho "# On branch $MYBRANCH"
+    else
+	Recho "OOPS: Local branch $MYBRANCH is not $BRANCH (missing assertBranch?)"
+	return 1 # error out! (missing assertBranch?)
+    fi
+
+    local L O
+    pDescribe $BRANCH "L"
+    pDescribe origin/$BRANCH "O"
+    if [[ $L != $O ]]; then
+        Cecho "# Updating $BRANCH to origin"
+        $GIT push --force origin $BRANCH
+        pDescribe origin/$BRANCH "O"
+    fi
+
+    [[ $L != $O ]] && {
+	Recho "OOPS: Not up-to date after push: $BRANCH: local:$L origin:$O"
+	retrun 1 # error out! (failed push)
+    }
+
+    Becho "# Up-to date after push: origin:$O"
+}
+
+function fileNewPR()
+{
+    local REPO="$1"
+    local SRC_BRANCH="${2#*/}"
+    local TRG_BRANCH="${3#*/}"
+
+    Cecho "REPO:       $REPO"
+    Cecho "SRC_BRANCH: $SRC_BRANCH"
+    Cecho "TRG_BRANCH: $TRG_BRANCH"
+
+    $GITOBS pr create \
+        --source-owner  "$GITEAUSER" \
+        --source-repo   "$REPO" \
+        --source-branch "$SRC_BRANCH" \
+        --target-branch "$TRG_BRANCH" \
+        --title "Update to factory version." --description ""
+}
+
+function updateStats()
+{
+    assertClone
+    checkFetch 60
+
+    MYTARGETS=()
+    getPRTargets MYTARGETS
+    (( ${#MYTARGETS[@]} )) || {
+	Mecho "# No PR targets!"
+	return
+    }
+    Becho "# Found ${#MYTARGETS[@]} PR targets!"
+
+    # now check what's going on:
+    # parent/factory -> factory -> origin/factory -> parent/PRbranches
+    #                   ^                     ^            ^
+    #                   |_ORIGIN_NEEDS_UPDATE_|_PR_RUNNING_|
+    #                   |_____________DO_DIFFER____________|
+
+    declare -i ORIGIN_NEEDS_UPDATE    # calling forceSyncBranch may do this (amends any running PRs)
+    assertBranch "factory"  ORIGIN_NEEDS_UPDATE
+
+    declare -i DO_DIFFER        # PR target and local  differ
+    declare -i PR_RUNNING       # A PR origin->patent is running
+    for DEST in ${MYTARGETS[@]}; do
+        declare -i DO_DIFFER
+        declare -i PR_RUNNING
+        pLogDiff "$DEST" "factory" DO_DIFFER
+        pLogPRStat "$DEST" "factory" PR_RUNNING
+        # wrap it up:
+        Bhead "$PFX""### ==================================================="
+        if (( $DO_DIFFER )); then
+            if (( $ORIGIN_NEEDS_UPDATE )); then
+                if (( $PR_RUNNING )); then
+                    Mecho "$PFX""### $GDIR $DEST:   UPDATE_ORIGIN (pr_is_running)"
+                    (( DO_SUBMIT )) && {
+                        forceSyncBranch "factory"
+                    }
+                else
+                    Mecho "$PFX""### $GDIR $DEST:   UPDATE_ORIGIN and FILE_NEW_PR"
+                    (( DO_SUBMIT )) && {
+                        forceSyncBranch "factory"
+                        fileNewPR "$PKG" "origin/factory" "$DEST"
+                    }
+                fi
+            else
+                if (( $PR_RUNNING )); then
+                    Becho "$PFX""### $GDIR $DEST:   is fine! (pr_is_running)"
+                else
+                    Mecho "$PFX""### $GDIR $DEST:   FILE_NEW_PR"
+                    (( DO_SUBMIT )) && {
+                        fileNewPR "$PKG" "origin/factory" "$DEST"
+                    }
+                fi
+            fi
+        else
+            Becho "$PFX""### $GDIR $DEST is fine!"
+        fi
+        Bhead "$PFX""### ==================================================="
+    done
+}
+
+### ============================================================
+### ============================================================
+function usage() {
+    cat << EOF
+Usage: $(basename "$0") [OPTS..] [PKG..] [-- GITARGS..]
+
+Options:
+    -f  Force git fetch (otherwise once an hour)
+    -v  More verbose; e.g. show all parent branches
+Dangerzone:
+    --submit
+        Updates or files required PRs.
+
+PreReq:
+- GITEAUSER configured: "$GITEAUSER"
+- PKGS configured: ${PKGS[@]}
+- Set up 'git-obs' and 'git-ibs' commands to refer to src.suse and src.opensuse.
+- Create empty 'obs' and 'ibs' subdirectories we use for cloning the repos.
+- Login to src.suse and src.opensuse and fork the packages from pool/PKG.
+  (or do it on the commandline; the script will hint if a fork is missing)
+
+The script basically updates parent/factory to local factory and determines the
+difference to the potential parent PR branches. Tries to figure out if needed
+PRs are already open or need to be opened. In both cases a submission needs to
+sync local factory to origin/factory, because that's the source of all PRs.
+Recognized PR targets are:
+    obs: parent/leap*
+    ibs: parent/slfo*
+
+Skip "obs" per default because there are no leap* branches for our packages.
+Use "-v obs all" to check obs.
+
+Without PKG args it checks the core stack only (libsolv, libzypp, zypper). Pass
+package names or use "all" to check specific packages.
+
+[If "-- GITARGS.." is passed, this git command is executed in all repos rather
+checking it's status]
+EOF
+}
+### ============================================================
+### ============================================================
+GITEAUSER="${GITEAUSER:-"mlandres"}"
+DO_SUBMIT=$((${DO_SUBMIT:-0}))
+FORCE=$((${FORCE:-0}))
+DEBUG=$((${DEBUG:-0}))
+PKGS=("libsolv" "libzypp" "zypper" "libzypp-testsuite-tools" "zypp-plugin")
+function containsPKG() { [[ " ${PKGS[*]} " =~ " $1 " ]]; }
+
+[ -d "obs" -o -d "ibs" ] || {
+    usage
+    Recho "Neither 'obs' nor 'ibs' subdirectory exists. Wrong CWD?"
+    false
+}
+
+obs=("ibs")
+pkg=()
+for ARG in "$@"; do
+    case "$ARG" in
+        --help|-h|help)
+            usage
+            exit
+            ;;
+        -v)
+            DEBUG=1
+            ;;
+        -f)
+            FORCE=1
+            ;;
+        --submit)
+            DO_SUBMIT=1
+            FORCE=1 # force fetch
+            ;;
+        obs)
+            obs=("obs")
+            ;;
+        all)
+            pkg=("${PKGS[@]}")
+            ;;
+        --)
+            shift
+            break   # leave it in $@
+            ;;
+        *)
+            if containsPKG "$ARG"; then
+                pkg+=("$ARG")
+            else
+                Recho "Unknown ARG $ARG"
+                false
+            fi
+            ;;
+    esac
+    shift
+done
+(( ${#pkg[@]} )) || {
+    pkg=("libsolv" "libzypp" "zypper")
+}
+
+for OBS in "${obs[@]}"; do
+    Bhead
+    Bhead "### ===[ $OBS ]============================================="
+    GITOBS="git-$OBS"
+    for PKG in "${pkg[@]}"; do
+	GDIR="$OBS/$PKG"
+	GIT="git -C $GDIR"
+	Bhead
+	Bhead "### ==================================================="
+	Bhead "### ===[ $GDIR ]( $@ )================================="
+
+	if (( ! $# )); then
+	    updateStats
+	else
+	    $GIT "$@"
+	fi
+    done
+done
