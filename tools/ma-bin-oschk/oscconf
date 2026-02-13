@@ -38,7 +38,7 @@ function get_oscconf()
 
     # ================================================================================
 
-    alp)	CONF="isc xs	Devel:zypp:ALP		SUSE:SLFO:Main				$SOLV_STACK"	;;
+    alp)	CONF="isc xx	Devel:zypp:ALP		SUSE:SLFO:Main				$SOLV_STACK"	;;
     # ================================================================================
     # https://bugzilla.suse.com/show_bug.cgi?id=1243457#c14 ff:
     Micro6.1)	CONF="isc xs	Devel:zypp:ALP		SUSE:SLFO:1.1				$SOLV_STACK"	;;
@@ -125,7 +125,7 @@ function oscautosubmittprj()
   local SPRJ="$1"
   case "$1" in
     head)
-      echo "alp Micro6.1 Micro6.0"
+      echo "Micro6.1 Micro6.0"
       ;;
     s15sp2)
       echo "s15sp3 s15sp4 s15sp5 s15sp6 s15sp7"
