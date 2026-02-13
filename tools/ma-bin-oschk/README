@@ -1,6 +1,14 @@
 Backup/Source of internal OSC check and release scripts
 =======================================================
 
+- Most off my scripts use colored output. You may need to source
+the colorecho file before using them. It provides the required
+Recho Gecho Becho Cecho Mecho Yecho shell functions.
+
+- The scripts expect 'osc' and 'git-obs' (for gitea) commands
+  to be configured to access *.opensuse.org.
+- 'isc' and 'git-ibs' configured to access *.suse.de.
+
 Traditional obs workflow (ATM TW and Code15)
 ------------------------
 For now, to avoid inconsistencies, scripts and configs are maintained at
