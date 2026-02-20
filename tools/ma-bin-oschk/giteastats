@@ -478,7 +478,7 @@ function fileNewPR()
         --source-repo   "$REPO" \
         --source-branch "$SRC_BRANCH" \
         --target-branch "$TRG_BRANCH" \
-        --title "Update to factory version." --description ""
+        --title "Update $TRG_BRANCH to factory version." --description ""
 }
 
 
