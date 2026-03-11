@@ -175,7 +175,7 @@ for PKG in $PKGS; do
       #ls -lt "$OSCLOGSDIR/$SPR"
       oscmrstats_diff "$OSC" "$SPRJ" "$PKG"
     else
-      RQID=$( $OSC request list "$TPRJ" "$PKG"	\
+      RQID=$( $OSC request list --mine "$TPRJ" "$PKG"	\
 	      | 3>&2 2>&1 >&3 awk '
 		/State:/	{ rid=int($1); print }
 		/submit:/	{ print }
