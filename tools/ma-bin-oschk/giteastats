@@ -1,7 +1,7 @@
 #! /bin/bash
 set -e
 
-[ type -t Recho ] || {
+type -t Recho || {
     # Colored echo output if you don't have it
     function __echostr() {
         if [ "$1" == "printf" ]; then
@@ -493,6 +493,9 @@ function updateStats()
 	Mecho "# No PR targets!"
 	return
     }
+    Becho "# parent/factory is at:"
+    GIT log --pretty=reference parent/factory~..parent/factory
+
     Becho "# Found ${#MYTARGETS[@]} PR targets!"
     # We want to merge factory(FF) into the product branches (PN).
     # So we expect there's one "lead" product branch and all other product
@@ -634,16 +637,16 @@ PreReq:
   #     ...O---P1---O---O---P2            merge(P2|FF'')
   #              \         /  \          /
   #   - old PR:   +_P1_PR_+    \        /    }
-  #   + new PR:    \            +_P2_PR+      } on --commit only
+  #   + new PR:    \            +_P2_PR+      } on --submit only
   #   + amended PR: +_____P1_PR_______+      }
   #
   # We merge the "lead" (local) and file/amend it's PR (origin->parent).
   # The other branches we force reset (local and origin) to the "lead"
   # and file/amend their PRs.
   #
-  # NOTE: Without --commit we will not move origin/ branches nor file
+  # NOTE: Without --submit we will not move origin/ branches nor file
   #       PRs. We will just adjust the local branches to check whether
-  #       changes are pending (whether --commit would amend or file new PRs).
+  #       changes are pending (whether --submit would amend or file new PRs).
 
 Recognized PR targets are:
     obs: parent/leap*
