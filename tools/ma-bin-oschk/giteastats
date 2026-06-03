@@ -48,7 +48,17 @@ function DBG() {
 }
 function REM() {
     # echo now and remember for summary
-    local OUT="$("$@")"
+    # ### | ibs/libsolv | parent/slfo-main: | UPDATE_ORIGIN and FILE_NEW_PR  | 0.7.37->0.7.39 | pool/libsolv#7
+    local ECHOCMD="$1"
+    shift
+    local OUT="$($ECHOCMD "$(printf "%s %-13s %-18s %-30s %-18s %s" "$@")")"
+    REMEMBER+=("$OUT")
+    echo "$OUT"
+}
+
+function REM0() {
+    # echo now and remember for summary
+     local OUT="$("$@")"
     REMEMBER+=("$OUT")
     echo "$OUT"
 }
@@ -153,11 +163,16 @@ function pDiff()     #  [-> _RET 0/1 if same/differ]
     fi
 }
 
+function pLogDiffGetVer()
+{ sed 's/^[^0-9]*\([0-9][0-9.]\+[0-9]\).*$/\1/' <<<"$1"; }
+
 function pLogDiff()     #  [-> _RET 0/1 if same/differ]
 {
     local OLD="$1"
     local NEW="$2"
     local -n _RET="$3"
+    local -n _DIFFERENCE="$4"
+    _DIFFERENCE=''
 
     local O N
     pDescribe "$OLD" "O"
@@ -180,9 +195,11 @@ function pLogDiff()     #  [-> _RET 0/1 if same/differ]
                 case "$X" in
                     A*)
                         Gecho "$PFX""$X"
+                        _DIFFERENCE="$(pLogDiffGetVer "$X")$_DIFFERENCE"
                         ;;
                     D*)
                         Recho "$PFX""$X"
+                        _DIFFERENCE="$_DIFFERENCE ($(pLogDiffGetVer "$X"))"
                         ;;
                     M*)
                         Becho "$PFX""$X"
@@ -196,6 +213,7 @@ function pLogDiff()     #  [-> _RET 0/1 if same/differ]
             _RET=0
             Becho "$PFX""# No difference between $OLD and $NEW"
         fi
+
 
         if (( $O_SHOWCHANGES )); then
             readarray -t CMDOUT < <(GIT diff "$OLD" "$NEW" "*changes")
@@ -218,6 +236,10 @@ function pLogDiff()     #  [-> _RET 0/1 if same/differ]
                 esac
             done
         fi
+    fi
+
+    if [ -z "$_DIFFERENCE" ]; then
+        _DIFFERENCE="$(pLogDiffGetVer "$(ls "$GDIR"/*.tar.*)")"
     fi
 }
 
@@ -478,7 +500,12 @@ function fileNewPR()
         --source-repo   "$REPO" \
         --source-branch "$SRC_BRANCH" \
         --target-branch "$TRG_BRANCH" \
-        --title "Update $TRG_BRANCH to factory version." --description ""
+        --title "Update $TRG_BRANCH to factory version." --description "" \
+    || {
+	Recho "# "
+	Recho "# fileNewPR: Timeout or serious?"
+	Recho "# "
+    }
 }
 
 
@@ -547,7 +574,7 @@ function updateStats()
         #                   ^                         ^                ^
         #                   |___ORIGIN_NEEDS_UPDATE___|___PR_RUNNING___|
         #                   |_________________DO_DIFFER________________|
-        pLogDiff parent/$TARGET_BRANCH $TARGET_BRANCH DO_DIFFER
+        pLogDiff parent/$TARGET_BRANCH $TARGET_BRANCH DO_DIFFER DIFFERENCE
         pLogPRStat $TARGET_BRANCH                     PR_RUNNING RUNNING_PRS
         pDiff    origin/$TARGET_BRANCH $TARGET_BRANCH ORIGIN_NEEDS_UPDATE
 
@@ -558,12 +585,12 @@ function updateStats()
         if (( $DO_DIFFER )); then
             if (( $ORIGIN_NEEDS_UPDATE )); then
                 if (( $PR_RUNNING )); then
-                    REM Mecho "$PFX""### $GDIR $DEST:\tUPDATE_ORIGIN (pr_is_running) ${RUNNING_PRS[@]}"
+                    REM Mecho "$PFX""###" "$GDIR" "$DEST:" "UPDATE_ORIGIN (pr_is_running)" "$DIFFERENCE" "${RUNNING_PRS[*]}"
                     (( DO_SUBMIT )) && {
                         forceSyncBranch $TARGET_BRANCH
                     }
                 else
-                    REM Mecho "$PFX""### $GDIR $DEST:\tUPDATE_ORIGIN and FILE_NEW_PR  ${RUNNING_PRS[@]}"
+                    REM Mecho "$PFX""###" "$GDIR" "$DEST:" "UPDATE_ORIGIN and FILE_NEW_PR" "$DIFFERENCE" "${RUNNING_PRS[*]}"
                     (( DO_SUBMIT )) && {
                         forceSyncBranch $TARGET_BRANCH
                         fileNewPR $PKG origin/$TARGET_BRANCH $DEST
@@ -571,9 +598,9 @@ function updateStats()
                 fi
             else
                 if (( $PR_RUNNING )); then
-                    REM Becho "$PFX""### $GDIR $DEST:\tis fine! (pr_is_running) ${RUNNING_PRS[@]}"
+                    REM Becho "$PFX""###" "$GDIR" "$DEST:" "is fine! (pr_is_running)" "$DIFFERENCE" "${RUNNING_PRS[*]}"
                 else
-                    REM Mecho "$PFX""### $GDIR $DEST:\tFILE_NEW_PR  ${RUNNING_PRS[@]}"
+                    REM Mecho "$PFX""###" "$GDIR" "$DEST:" "FILE_NEW_PR" "$DIFFERENCE" "${RUNNING_PRS[*]}"
                     (( DO_SUBMIT )) && {
                         forceSyncBranch $TARGET_BRANCH
                         fileNewPR $PKG origin/$TARGET_BRANCH $DEST
@@ -581,7 +608,7 @@ function updateStats()
                 fi
             fi
         else
-            REM Becho "$PFX""### $GDIR $DEST:\tis fine!"
+            REM Becho "$PFX""###" "$GDIR" "$DEST:" "is fine!" "$DIFFERENCE"
         fi
         Bhead "$PFX""### ==================================================="
     done
