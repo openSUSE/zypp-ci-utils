@@ -1,0 +1,92 @@
+#! /usr/bin/python3.11
+import sys, os, traceback
+from tools import *
+#======================================================================
+def LOG_HEAD( *args ):
+    Bprint( "### ######################################################################" )
+    Bprint( "###", *args )
+    Bprint( "### ######################################################################" )
+
+def LOG_TASK( *args ):
+    Bprint( "###", *args )
+
+def LOG_END():
+    Bprint( "### ######################################################################" )
+
+def LOG_SEP():
+    Bprint( "### ----------------------------------------------------------------------" )
+
+#======================================================================
+def usage():
+    print(f'''Usage: {os.path.basename(sys.argv[0])} [PKG|PBRANCH]..
+''')
+
+def main():
+    checkWorkspaceMagic( ".giteastats" )    # Prevent us from doing checkouts at arbitrary CWDs
+    fetchDelay = 60
+
+    obsSourcePrj   = Obs.Prj("zypp:Head")
+    giteaTarget    = GitIbs
+    knownPkgs      = ( "libsolv", "libzypp", "zypper", "zypp-plugin" )
+    knownPbranches = ( "slfo-main", "slfo-1.2" )
+
+    pkgs      = set()
+    pbranches = set()
+    doSubmit  = False
+
+    for arg in sys.argv[1:]:
+        # usage ------------------------------------------------
+        if arg == "-h" or arg == "--help":
+            print(f'''Usage: {os.path.basename(sys.argv[0])} [--submit] [PKG|PBRANCH]...
+Show submission stats for PKGs and PBRANCHes.
+Updates local data, but no remote unless --submit.
+
+    --submit     : Commit pending changes to origin and make sure
+                   a PR to parent is running.
+
+    obsSourcePrj : {obsSourcePrj}
+    giteaTarget  : {giteaTarget.__name__} ({Gitea.USER})
+    PKGs         : {" ".join(knownPkgs)}
+    PBRANCHes    : {" ".join(knownPbranches)}
+''')
+            return 0
+        # usage ------------------------------------------------
+
+        if arg in knownPkgs:
+            pkgs.add( arg )
+        elif arg in knownPbranches:
+            pbranches.add( arg )
+        elif arg == "--submit":
+            doSubmit = True
+        else:
+            raise ValueError( f"Unknown argument: {arg}" )
+
+    if not len(pkgs):
+        pkgs = knownPkgs
+    if not len(pbranches):
+        pbranches = knownPbranches
+
+    stats = []
+    for pkg in pkgs:
+        task = SubmissionTask( obsSourcePrj, giteaTarget, pkg, fetchDelay=fetchDelay )
+        task.updateFromObs()
+        task.checkSubmittStatus( pbranches )
+        stats.append( task )
+
+
+    LOG_HEAD( "SUBMIT" if doSubmit else "SUMMARY" )
+    for task in stats:
+        task.setFateFromStats()
+        task.summarizeFate()
+        if doSubmit:
+            task.submitFate()
+    LOG_END()
+    return 13
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except Exception as e:
+        Rprint( "OOps:", e )
+        Rprint( traceback.format_exc() )
