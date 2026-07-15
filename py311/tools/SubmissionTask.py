@@ -227,6 +227,7 @@ class SubmissionTask:
         self.fate = self.Fate( self.stats )
 
     def summarizeFate( self ):
+        somethingToDO = False
         # on the fly check unprocessed parent branches
         knownBranches = set( m[1] for m in self.trg.git( "branch", "-r" ).stdout( stdout="^\s*parent/([^ ]*)$", quiet=True ).byMatch() )
         sawBranches   = set( ('factory',) )    # strip it
@@ -241,9 +242,11 @@ class SubmissionTask:
             if updateOrigin:   # update implies needPR
                 tag = f"UPDATE_ORIGIN {'(pr_is_running)' if havePR else 'and FILE_NEW_PR'}"
                 LOGprint = Mprint
+                somethingToDO = True
             elif needPR:        # no update but need running PR
                 tag = 'is fine! (pr_is_running)' if havePR else 'FILE_NEW_PR'
                 LOGprint = Bprint if havePR else Mprint
+                if not havePR: somethingToDO = True
             else:               # all fine
                 tag = 'is fine!'
                 LOGprint = Bprint
@@ -255,6 +258,7 @@ class SubmissionTask:
 
         missingBranches = knownBranches - sawBranches
         Cprint( "   ", missingBranches )
+        return somethingToDO
 
     def submitFate( self ):
         comitMsg = None

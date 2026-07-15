@@ -75,13 +75,16 @@ Updates local data, but no remote unless --submit.
 
 
     LOG_HEAD( "SUBMIT" if doSubmit else "SUMMARY" )
+    somethingToDO = False
     for task in stats:
         task.setFateFromStats()
-        task.summarizeFate()
-        if doSubmit:
-            task.submitFate()
+        if task.summarizeFate():    # somethingToDO
+            if doSubmit:
+                task.submitFate()
+            else:
+                somethingToDO = True
     LOG_END()
-    return 13
+    return 42 if somethingToDO else 0
 
 
 if __name__ == '__main__':
@@ -90,3 +93,4 @@ if __name__ == '__main__':
     except Exception as e:
         Rprint( "OOps:", e )
         Rprint( traceback.format_exc() )
+        sys.exit( 13 )
