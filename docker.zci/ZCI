@@ -22,7 +22,7 @@ function tag2hash()
 { git show-ref -s "$1"; }
 
 function tag2comm()
-{ git log --pretty=reference --relative HEAD^..HEAD; }
+{ git log --date=short --pretty='format:%(describe) (%s, %ad)' HEAD^..HEAD; }
 
 function v_curr()
 { echo "$(tr -- - _ <<<"$1")_curr"; }
