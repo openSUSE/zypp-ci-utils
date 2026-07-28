@@ -1,0 +1,53 @@
+##################################################
+# echo "$0 - bashrc"
+##################################################
+PS1_CRESTORE="\[\033(B\033[m\]"
+   BOLD="\[\033[1m\]"
+ NORMAL="\[\033[m\]"
+    RED="\[\033[31m\]"
+   BLUE="\[\033[34m\]"
+  GREEN="\[\033[32m\]"
+   CYAN="\[\033[36m\]"
+MAGENTA="\[\033[35m\]"
+  WHITE="\[\033[37m\]"
+  BLACK="\[\033[30m\]"
+
+function ps1_parse_git_branch() {
+  local SRET=$?
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/[\1]/'
+  return $SRET
+}
+function ps1_ret_err() {
+  local SRET=$?
+  test "$1" == "0" || echo "$1"
+  return $SRET
+}
+function ps1_ret_ok() {
+  local SRET=$?
+  test "$1" == "0" && echo "$1"
+  return $SRET
+}
+function xterm_title() {
+  echo -ne "\033]0;$1\007"
+}
+export -f xterm_title
+
+export PS1="${BOLD}${MAGENTA}\$(ps1_parse_git_branch)${NORMAL}${GREEN}${USER}${BOLD}${BLUE}:\W (${RED}\$(ps1_ret_err \$?)${BLACK}\$(ps1_ret_ok \$?)${BLUE})>${NORMAL} "
+export PROMPT_COMMAND='xterm_title "${USER} ${HOSTNAME}: ${PWD}"'
+
+##################################################
+alias h=history
+alias ls='ls $LS_OPTIONS'
+alias l='ls'
+alias ll='ls -l'
+alias la='ls -a'
+alias lla='ls -la'
+##################################################
+export ZCI_USER_CONFIGDIR=~/.config/zypp-team
+export ZCI_UTILS_CHECKOUT=~/zypp-ci-utils
+export ZCI_WORKSPACE=~/ZCI_WORKSPACE
+if [ -d "$ZCI_UTILS_CHECKOUT" ]; then
+    PATH="$ZCI_UTILS_CHECKOUT/zypp-team/bin:$PATH"
+fi
+[ -z "$SSH_AUTH_SOCK" -a -f ~/.ssh4cron ] && . ~/.ssh4cron
+##################################################

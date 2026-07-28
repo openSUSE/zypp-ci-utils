@@ -1,0 +1,3 @@
+#! /bin/bash
+[ -d "$ZCI_USER_CONFIGDIR" ] || exit 13
+exec git-obs --gitea-config "$ZCI_USER_CONFIGDIR"/gitea-config -G obs-zt "$@"

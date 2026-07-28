@@ -1,0 +1,15 @@
+[general]
+su-wrapper = sudo
+build-root = /var/tmp/build-root-zt-%(repo)
+no_verify = 1
+#http_debug = 1
+
+[https://api.opensuse.org]
+user=zypp-team
+sshkey=zypp-team-submittkey
+credentials_mgr_class=osc.credentials.TransientCredentialsManager
+
+[https://api.suse.de]
+user=zypp-team
+sshkey=zypp-team-submittkey
+credentials_mgr_class=osc.credentials.TransientCredentialsManager

@@ -1,0 +1,45 @@
+[see bashrc]
+##################################################
+export ZCI_USER_CONFIGDIR=~/.config/zypp-team
+export ZCI_UTILS_CHECKOUT=~/zypp-ci-utils
+export ZCI_WORKSPACE=~/ZCI_WORKSPACE
+if [ -d "$ZCI_UTILS_CHECKOUT" ]; then
+    PATH="$ZCI_UTILS_CHECKOUT/zypp-team/bin:$PATH"
+fi
+[ -z "$SSH_AUTH_SOCK" -a -f . ~/.ssh4cron ] && . ~/.ssh4cron
+##################################################
+
+Setup:
+
+- Get the zypp-ci-utils project:
+# cd ~
+# git clone https://github.com/openSUSE/zypp-ci-utils.git
+
+
+- Copy the zypp-team-submittkey to ~/.ssh
+Then call ($ZCI_UTILS_CHECKOUT/zypp-team/bin/)ssh4cron to launch an ssh-agent
+if not yet running and add the zypp-team-submittkey (passphrase needed). You
+can call it anytime to make sure the key is available (e.g. after reboot).
+
+(The launched agents env vars are stored in ~/.ssh4cron. Sourcing it gives you
+access to the agent. That's done by bashrc if ~/.ssh4cron
+
+
+- Copy and setups config files:
+# mkdir --parents "$ZCI_USER_CONFIGDIR"
+# cp "$ZCI_UTILS_CHECKOUT"/zypp-team/cfg/* "$ZCI_USER_CONFIGDIR"
+
+Set auth tokens in oscrc and gitea-config so the configuration allows to
+access IBS/OBS/GITEA as user zypp-team. Extending the PATH will then provide
+git-ibs-zt  git-obs-zt  isc-zt  osc-zt commands to access IBS/OBS/GITEA as user
+zypp-team. Scripts in "$ZCI_UTILS_CHECKOUT/zypp-team/bin" will refer to these
+commands.
+
+
+- Setup the ZCI_WORKSPACE:
+# mkdir --parents "$ZCI_WORKSPACE"
+# touch "$ZCI_WORKSPACE"/.giteastats
+
+The magic .giteastats file is needed to enable using this directory for all
+kinds of necessary checkouts.
+
