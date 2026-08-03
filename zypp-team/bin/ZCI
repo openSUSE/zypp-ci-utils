@@ -1,0 +1,77 @@
+#! /bin/bash
+[ -z "$ZCI_UTILS_CHECKOUT" ] && {
+    . ~/.bashrc
+    [ -z "$ZCI_UTILS_CHECKOUT" ] && {
+	echo "*** No ZCI_UTILS_CHECKOUT configured" >&2
+	exit 13
+    }
+}
+DOKDIR="$ZCI_UTILS_CHECKOUT/docker.zci"
+LOGDIR=~/logs
+
+if [ "$1" == "-h" -o "$1" == "--help"  ]; then
+    cat <<-EOF
+Run ZCI inside the dockerzci_zci-tw container or trace an already running build.
+On success a build ends with submission to OBS (zypp:Head).
+
+Logfiles in $LOGDIR. Docker writes to ZCI.runninglog. On success it's moved to
+ZCI.lastlog, otherwise ZCI.faillog.
+
+Note that the CI_ROOT_VOLUME directory configured for the container (see file
+env) is available is available inside and outside the container with the same
+path.
+
+For maintenance:
+
+# termA:	Stop any new cron ZCI until you're done
+ZCI --lock
+
+# termBC...:	Get a bash inside the container
+ZCI --xterm
+
+EOF
+    exit 0
+fi
+
+function dockercmd() (
+    set -e
+    cd $DOKDIR
+    docker compose run --rm --name dockerzci_zci-tw zci-tw bash -l -c bin/ZCI
+)
+
+( flock -n -x 200 || exit 13
+
+    if [ "$1" == "--silent" ]; then
+	if dockercmd >$LOGDIR/ZCI.runninglog 2>&1; then
+	    mv $LOGDIR/ZCI.runninglog $LOGDIR/ZCI.lastlog
+	    rm -f $LOGDIR/ZCI.faillog
+	else
+	    mv $LOGDIR/ZCI.runninglog $LOGDIR/ZCI.faillog
+	    rm -f $LOGDIR/ZCI.lastlog
+	    cat $LOGDIR/ZCI.faillog
+	fi
+    elif [ "$1" == "--lock" ]; then
+	read -p "ZCI locked! Enter to unlock: "
+    else
+	dockercmd
+    fi
+
+) 200>$LOGDIR/.ZCI.lock
+
+if (( $? == 13 )) && [ "$1" != "--silent" ]; then
+    # locked and not in cron
+    if [ -f "$LOGDIR/ZCI.runninglog" ]; then
+	tail -F $LOGDIR/ZCI.runninglog
+    elif [ "$1" == "--xterm" ]; then
+	echo "*** --xterm"
+	cd $DOKDIR
+	if docker ps | grep dockerzci_zci-tw; then
+	    docker exec -ti dockerzci_zci-tw bash
+	else
+	    docker compose run --rm --name dockerzci_zci-tw zci-tw bash
+	fi
+    else
+	echo "*** locked bot no --xterm"
+    fi
+    exit 13
+fi

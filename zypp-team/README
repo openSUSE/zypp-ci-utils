@@ -43,3 +43,12 @@ commands.
 The magic .giteastats file is needed to enable using this directory for all
 kinds of necessary checkouts.
 
+
+##################################################
+ZCI (ATM via docker):
+
+See also zypp-ci-utils/docker.zci/README.
+and zypp-ci-utils/zypp-team/bin/ZCI --help
+
+Triggered by cron (crontab -l).
+

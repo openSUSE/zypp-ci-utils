@@ -2,7 +2,7 @@
 File .env
 =========
 
-CI_ROOT_VOLUME=/Local/ZCIWorkspace
+CI_ROOT_VOLUME=/home/zci/DOCKER_ZCI_WORKSPACE
 - Path where the outer and inner workdirs are mounted. As long as
   git-new-workdir is used by ZCIbuild, both paths must be the same because
   new-workdir always uses absolute paths to symlink into the master checkout
@@ -12,8 +12,8 @@ CI_ROOT_VOLUME=/Local/ZCIWorkspace
   the container. Just the OBS credentials are expected to be provided in
   CI_ROOT_VOLUME/ZCI/CONFIG/oscrc.
 
-CI_UID=1004
-CI_GID=50
+CI_UID=1000
+CI_GID=1000
 - Ids for user/group zci inside the container. The local CI_ROOT_VOLUME should
   allow reads (ZCI) and writes (ZCIbuild).
 
@@ -44,15 +44,11 @@ docker compose run --rm [--name ???] [-ti] zci-tw
 docker compose run --rm [--name ???] [-ti] zci-tw bash -l -c bin/ZCI
 
 
-With ~suse/bin/ZCI
+With zypp-ci-utils/zypp-team/bin/ZCI
 ================
 # termA:
 ZCI --lock
 
-# termB:
-cd ~suse/suse.git/zypp-ci-utils/docker.zci
-docker compose run --rm --name dockerzci_zci-tw zci-tw bash
+# termBC...:
+ZCI --xterm
 
-# term*:
-cd ~suse/suse.git/zypp-ci-utils/docker.zci
-docker exec -ti dockerzci_zci-tw bash

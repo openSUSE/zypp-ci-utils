@@ -25,6 +25,7 @@ RUN zypper --non-interactive in --no-recommends check-devel graphviz bzip2
 ARG USER=zci
 RUN groupadd --gid ${CI_GID} zci
 RUN useradd --home-dir /home/zci --no-create-home --gid zci --uid ${CI_UID} ${USER}
+RUN mkdir -p /home/zci/ZCIWorkspace && chown -R zci:zci /home/zci
 RUN echo "%zci ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/zci
 
 WORKDIR /root

@@ -16,6 +16,7 @@ RUN zypper --non-interactive --no-refresh --ignore-unknown in --no-recommends --
 ARG USER=zci
 RUN groupadd --gid ${CI_GID} zci
 RUN useradd --home-dir /home/zci --no-create-home --gid zci --uid ${CI_UID} ${USER}
+RUN mkdir -p /home/zci/ZCIWorkspace && chown -R zci:zci /home/zci
 RUN echo "%zci ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/zci
 
 WORKDIR /root
