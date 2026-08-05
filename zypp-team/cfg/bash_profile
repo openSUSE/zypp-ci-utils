@@ -5,8 +5,18 @@
 echo "ZCI_USER_CONFIGDIR=$ZCI_USER_CONFIGDIR"
 echo "ZCI_UTILS_CHECKOUT=$ZCI_UTILS_CHECKOUT"
 echo "ZCI_WORKSPACE=$ZCI_WORKSPACE"
+echo
+
 if ssh-add -T ~/.ssh/zypp-team-submittkey; then
     echo "ssh-agent($SSH_AGENT_PID) has zypp-team-submittkey"
 else
     echo "*** No zypp-team-submittkey in ssh-agent! (call ssh4cron)"
 fi
+echo
+
+echo "$ZCI_UTILS_CHECKOUT status:"
+git -C "$ZCI_UTILS_CHECKOUT" status --porcelain --branch
+echo
+
+ls -l ~/logs
+echo
