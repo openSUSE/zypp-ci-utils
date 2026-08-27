@@ -1,6 +1,6 @@
 [general]
 su-wrapper = sudo
-build-root = /var/tmp/build-root-zt-%(repo)
+build-root = /var/tmp/build-root-zt-%(repo)s-%(package)s
 no_verify = 1
 #http_debug = 1
 
