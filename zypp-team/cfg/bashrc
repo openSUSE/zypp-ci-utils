@@ -46,8 +46,8 @@ alias lla='ls -la'
 export ZCI_USER_CONFIGDIR=~/.config/zypp-team
 export ZCI_UTILS_CHECKOUT=~/zypp-ci-utils
 export ZCI_WORKSPACE=~/ZCI_WORKSPACE
-if [ -d "$ZCI_UTILS_CHECKOUT" ]; then
-    PATH="$ZCI_UTILS_CHECKOUT/zypp-team/bin:$PATH"
+if [ -f "$ZCI_UTILS_CHECKOUT/zypp-team/cfg/bashrc.zci" ]; then
+    source "$ZCI_UTILS_CHECKOUT/zypp-team/cfg/bashrc.zci"
 fi
 [ -z "$SSH_AUTH_SOCK" -a -f ~/.ssh4cron ] && . ~/.ssh4cron
 ##################################################

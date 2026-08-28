@@ -37,6 +37,8 @@ function dockercmd() (
     set -e
     cd $DOKDIR
     docker compose run --rm --name dockerzci_zci-tw zci-tw bash -l -c bin/ZCI
+    # Preliminary run not-dockered ZCI here
+    ZCI-checkService
 )
 
 ( flock -n -x 200 || exit 13

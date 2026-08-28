@@ -1,0 +1,10 @@
+##################################################
+# echo "$0 - bashrc.zci"
+##################################################
+# Should be sourced (by .bashrc) to complete setup
+# from $ZCI_UTILS_CHECKOUT. See bashrc as example.
+##################################################
+
+PATH="$ZCI_UTILS_CHECKOUT/zypp-team/bin:$PATH"
+
+source "$ZCI_UTILS_CHECKOUT/zypp-team/cfg/bashrc.d/colorecho"

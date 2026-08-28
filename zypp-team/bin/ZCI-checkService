@@ -1,0 +1,75 @@
+#! /bin/bash
+set -e
+
+function Rexit() {
+    local CODE="${CODE:-13}"
+    Recho "*** ERR: $@" >&2
+    exit $CODE
+}
+
+function Btask() {
+    local TAG="$(basename "$0"): $*"
+    Becho "################################################################################"
+    Becho "## $TAG"
+    Becho "################################################################################"
+    trap "Becho '##' $TAG; Becho '##------------------------------------------------------------------------------';" 0 1 2 3 6 9 13 15
+}
+
+################################################################################
+
+OBSPRJ="zypp:Head"
+OBSPKG="mcp-server-zypp"
+Btask "$OBSPRJ $OBSPKG"
+
+################################################################################
+
+[ -d "$ZCI_WORKSPACE" ] || {
+    Rexit "No ZCI_WORKSPACE directory: $ZCI_WORKSPACE"
+}
+
+[ -f "$ZCI_WORKSPACE/.giteastats" ] || {
+    Rexit "Missing workspace magic: $ZCI_WORKSPACE/.giteastats"
+}
+
+OSC="$ZCI_UTILS_CHECKOUT/zypp-team/bin/osc-zt"
+[ -f "$OSC" ] || {
+    Rexit "No $OSC command found (osc that executes as zypp-team with correct config)"
+}
+
+WORKINGDIR="$ZCI_WORKSPACE/ZCI-checkService"
+[ -d "$WORKINGDIR" ] || mkdir -p "$WORKINGDIR"
+cd "$WORKINGDIR"
+
+################################################################################
+
+OBSPKGDIR="$OBSPRJ/$OBSPKG"
+if [ -d "$OBSPKGDIR" ]; then
+    cd "$OBSPKGDIR"
+    ${OSC} up -u
+else
+    ${OSC} co -u "$OBSPRJ" "$OBSPKG"
+    cd "$OBSPKGDIR"
+fi
+
+[ -f "_service" ] || {
+    Rexit "No _service file in $OBSPKGDIR"
+}
+
+# Cleanup all generated files before updating the service.
+# Especially the old git checkout! For not-generated content
+# we'll need to define some convention.
+for F in *; do
+    [ "$F" != "_service" ] && rm -rf "$F"
+done
+
+${OSC} service manualrun
+GIT_STATE="$OBSPKG gitrev $(git -C "$OBSPKG" describe --tags)"
+
+if ${OSC} status | grep '^.'; then
+    # Not while inside container: ${OSC} build
+    ${OSC} addremove
+    ${OSC} ci -m "$GIT_STATE"
+    Mecho "## $GIT_STATE sent to OBS"
+else
+    Gecho "## $GIT_STATE already uploaded to OBS"
+fi
