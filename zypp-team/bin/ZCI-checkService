@@ -1,5 +1,6 @@
 #! /bin/bash
 set -e
+ZCI_OBS_DRYRUN=${ZCI_OBS_DRYRUN:-0}
 
 function Rexit() {
     local CODE="${CODE:-13}"
@@ -68,7 +69,11 @@ GIT_STATE="$OBSPKG gitrev $(git -C "$OBSPKG" describe --tags)"
 if ${OSC} status | grep '^.'; then
     # Not while inside container: ${OSC} build
     ${OSC} addremove
-    ${OSC} ci -m "$GIT_STATE"
+    if (( $ZCI_OBS_DRYRUN )); then
+	Mecho "[DRY>" ${OSC} ci -m "$GIT_STATE"
+    else
+	${OSC} ci -m "$GIT_STATE"
+    fi
     Mecho "## $GIT_STATE sent to OBS"
 else
     Gecho "## $GIT_STATE already uploaded to OBS"
