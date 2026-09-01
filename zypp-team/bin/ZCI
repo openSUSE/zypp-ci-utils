@@ -18,16 +18,21 @@ Logfiles in $LOGDIR. Docker writes to ZCI.runninglog. On success it's moved to
 ZCI.lastlog, otherwise ZCI.faillog.
 
 Note that the CI_ROOT_VOLUME directory configured for the container (see file
-env) is available is available inside and outside the container with the same
-path.
+env) is available inside and outside the container with the same path.
+
+To pull from git:
+
+  # Acquire the lock and pull from git (if no local changes)
+  # ($ZCI_UTILS_CHECKOUT)
+  ZCI --update
 
 For maintenance:
 
-# termA:	Stop any new cron ZCI until you're done
-ZCI --lock
+  # termA:	Stop any new cron ZCI until you're done
+  ZCI --lock
 
-# termBC...:	Get a bash inside the container
-ZCI --xterm
+  # termBC...:	Get a bash inside the container
+  ZCI --xterm
 
 EOF
     exit 0
@@ -52,6 +57,14 @@ function dockercmd() (
 	    rm -f $LOGDIR/ZCI.lastlog
 	    cat $LOGDIR/ZCI.faillog
 	fi
+    elif [ "$1" == "--update" ]; then
+	GIT="git -C $ZCI_UTILS_CHECKOUT"
+	if [[ $($GIT status --porcelain --untracked-files=no) ]]; then	# hasLocalChanges?
+	    Recho "No pull with local changes!"
+	else
+	    $GIT pull
+	fi
+	$GIT status --porcelain --branch
     elif [ "$1" == "--lock" ]; then
 	read -p "ZCI locked! Enter to unlock: "
     else
@@ -73,7 +86,7 @@ if (( $? == 13 )) && [ "$1" != "--silent" ]; then
 	    docker compose run --rm --name dockerzci_zci-tw zci-tw bash
 	fi
     else
-	echo "*** locked bot no --xterm"
+	echo "*** locked but no --xterm"
     fi
     exit 13
 fi
