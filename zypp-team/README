@@ -11,13 +11,17 @@ fi
 
 Setup:
 
+- Copy the zypp-team-submittkey to ~/.ssh
+
 - Get the zypp-ci-utils project:
 # cd ~
-# git clone https://github.com/openSUSE/zypp-ci-utils.git
+# git config --global user.name 'zypp ci'
+# git config --global user.email zypp-internal@suse.com
+# git clone git@github.com:openSUSE/zypp-ci-utils.git
 
 
-- Copy the zypp-team-submittkey to ~/.ssh
-Then call ($ZCI_UTILS_CHECKOUT/zypp-team/bin/)ssh4cron to launch an ssh-agent
+- Lauch an ssh-agent
+Call ($ZCI_UTILS_CHECKOUT/zypp-team/bin/)ssh4cron to launch an ssh-agent
 if not yet running and add the zypp-team-submittkey (passphrase needed). You
 can call it anytime to make sure the key is available (e.g. after reboot).
 
