@@ -1,2 +1,6 @@
+*.orig
+*.rej
+*.swp
+*.kate-swp
 java/
 RPMS
