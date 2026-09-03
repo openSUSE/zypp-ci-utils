@@ -86,7 +86,8 @@ EXIT_CODE="$?"
 if (( $EXIT_CODE == 13 )) && [ "$1" != "--silent" ]; then
     # locked and not in cron: 
     if [ -f "$LOGDIR/ZCI.runninglog" ]; then
-	tail -F $LOGDIR/ZCI.runninglog
+        LOCK_PID=$(fuser ~/logs/.ZCI.lock 2>/dev/null)
+        tail -F --pid $LOCK_PID $LOGDIR/ZCI.runninglog
     elif [ "$1" == "--xterm" ]; then
 	echo "*** --xterm"
 	cd $DOKDIR
