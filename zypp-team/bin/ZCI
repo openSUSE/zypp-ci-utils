@@ -3,11 +3,19 @@
     . ~/.bashrc
     [ -z "$ZCI_UTILS_CHECKOUT" ] && {
 	echo "*** No ZCI_UTILS_CHECKOUT configured" >&2
-	exit 13
+	exit 99
     }
 }
 DOKDIR="$ZCI_UTILS_CHECKOUT/docker.zci"
+[ -d "$DOKDIR" ] || {
+    echo "*** No $DOKDIR in ZCI_UTILS_CHECKOUT" >&2
+    exit 99
+}
 LOGDIR=~/logs
+[ -d "$LOGDIR" ] || mkdir -p "$LOGDIR" || {
+    echo "*** Can not create LOGDIR  $LOGDIR" >&2
+    exit 99
+}
 
 if [ "$1" == "-h" -o "$1" == "--help"  ]; then
     cat <<-EOF
@@ -39,11 +47,11 @@ EOF
 fi
 
 function dockercmd() (
-    set -e
     cd $DOKDIR
-    docker compose run --rm --name dockerzci_zci-tw zci-tw bash -l -c bin/ZCI
+    docker compose run --rm --name dockerzci_zci-tw zci-tw bash -l -c bin/ZCI \
+	&& ZCI-checkService \
+	|| { Recho "FAILED"; return 1; }
     # Preliminary run not-dockered ZCI here
-    ZCI-checkService
 )
 
 ( flock -n -x 200 || exit 13
@@ -56,6 +64,7 @@ function dockercmd() (
 	    mv $LOGDIR/ZCI.runninglog $LOGDIR/ZCI.faillog
 	    rm -f $LOGDIR/ZCI.lastlog
 	    cat $LOGDIR/ZCI.faillog
+	    exit 1
 	fi
     elif [ "$1" == "--update" ]; then
 	GIT="git -C $ZCI_UTILS_CHECKOUT"
@@ -72,9 +81,10 @@ function dockercmd() (
     fi
 
 ) 200>$LOGDIR/.ZCI.lock
+EXIT_CODE="$?"
 
-if (( $? == 13 )) && [ "$1" != "--silent" ]; then
-    # locked and not in cron
+if (( $EXIT_CODE == 13 )) && [ "$1" != "--silent" ]; then
+    # locked and not in cron: 
     if [ -f "$LOGDIR/ZCI.runninglog" ]; then
 	tail -F $LOGDIR/ZCI.runninglog
     elif [ "$1" == "--xterm" ]; then
@@ -90,3 +100,4 @@ if (( $? == 13 )) && [ "$1" != "--silent" ]; then
     fi
     exit 13
 fi
+exit $EXIT_CODE
