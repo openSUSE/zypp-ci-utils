@@ -180,9 +180,16 @@ class SubmissionTask:
         # trgbnanch <(next submitt)> origin/trgbnanch <(should be in sync)> origin/prbranch <(PR)> parent/prbranch
         LOG_TASK( "submittStatus", self.trg, trgbranch, "->", prbranch )
 
-        trgAt = f"origin/{trgbranch}"
-        oriAt = f"origin/{prbranch}"
-        parAt = f"parent/{prbranch}"
+        trgAt = f"origin/{trgbranch}"   # Obs- Branch
+        oriAt = f"origin/{prbranch}"    # slfo- : PR source branch
+        parAt = f"parent/{prbranch}"    # slfo- : PR target branch
+
+        # some checks about the expected branch structure:
+        if not trg.isRemoteBranch(parAt):
+            raise Exception( f"{self}: checkSubmittStatus {prbranch}: No PR target branch {parAt}" )
+
+        if not trg.isRemoteBranch(oriAt):   # Create PR source set to parent
+            trg.assertCleanBranch( prbranch, forceAt=parAt )
 
         if trg.strictAncestor( oriAt, trgAt ):    # Exception if not <=
             ostat = StepStat( trg.extractStatChanges( oriAt, trgAt ) )

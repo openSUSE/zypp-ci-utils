@@ -28,7 +28,7 @@ def main():
     obsSourcePrj   = Obs.Prj("zypp:Head")
     giteaTarget    = GitIbs
     knownPkgs      = ( "libsolv", "libzypp", "zypper", "zypp-plugin" )
-    knownPbranches = ( "slfo-main", "slfo-1.2" )
+    knownPbranches = ( "slfo-main", "slfo-1.2", "slfo-1.3" )
 
     pkgs      = set()
     pbranches = set()
