@@ -181,15 +181,17 @@ class SubmissionTask:
         LOG_TASK( "submittStatus", self.trg, trgbranch, "->", prbranch )
 
         trgAt = f"origin/{trgbranch}"   # Obs- Branch
-        oriAt = f"origin/{prbranch}"    # slfo- : PR source branch
-        parAt = f"parent/{prbranch}"    # slfo- : PR target branch
+        oriAt = f"origin/{prbranch}"    # origin/slfo- : PR source branch
+        parAt = f"parent/{prbranch}"    # parent/slfo- : PR target branch
 
         # some checks about the expected branch structure:
         if not trg.isRemoteBranch(parAt):
             raise Exception( f"{self}: checkSubmittStatus {prbranch}: No PR target branch {parAt}" )
 
-        if not trg.isRemoteBranch(oriAt):   # Create PR source set to parent
-            trg.assertCleanBranch( prbranch, forceAt=parAt )
+        if not trg.isRemoteBranch(oriAt):   # Create a new PR source in origin/ and set to trgAt
+            # trgAt appears to be a better starting point in case of disconnected
+            ## histories than parAt.
+            trg.assertCleanBranch( prbranch, forceAt=trgAt )
 
         if trg.strictAncestor( oriAt, trgAt ):    # Exception if not <=
             ostat = StepStat( trg.extractStatChanges( oriAt, trgAt ) )
@@ -197,10 +199,19 @@ class SubmissionTask:
             ostat = StepStat()  # up-to-date
         ostat.LOG( self.trg, prbranch, "ORIGIN" )
 
-        if trg.strictAncestor( parAt, oriAt ):    # Exception if not <=
-            pstat = StepStat( trg.extractStatChanges( parAt, oriAt ) )
-        else:
-            pstat = StepStat()  # up-to-date
+        try:
+            if trg.strictAncestor( parAt, oriAt ):    # Exception if not <=
+                pstat = StepStat( trg.extractStatChanges( parAt, oriAt ) )
+            else:
+                pstat = StepStat()  # up-to-date
+        except Exception as e:
+            # Usually a new branch with disconnected history.
+            if trg.isAncestor( oriAt, parAt ):
+                raise   # Wrong ancestor direction: BAD!
+            else:
+                # disconnected histories: give it a try
+                Mprint( "!!!", "disconnected histories for", oriAt, parAt )
+                pstat = StepStat( trg.extractStatChanges( parAt, oriAt ) )
         pstat.LOG( self.trg, prbranch, "PR" )
 
         runningPR = self._haveOpenPR( prbranch )
