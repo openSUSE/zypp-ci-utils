@@ -1,0 +1,16 @@
+#! /bin/bash
+# Weekly checks (see crontab -l)
+[ -z "$ZCI_UTILS_CHECKOUT" ] && {
+    . ~/.bashrc
+    [ -z "$ZCI_UTILS_CHECKOUT" ] && {
+        echo "*** No ZCI_UTILS_CHECKOUT configured" >&2
+        exit 13
+    }
+}
+
+# Just an alive status to see the machine is running
+echo "zci@zyppci status:"
+echo
+. ~/.bash_profile
+
+exit 0

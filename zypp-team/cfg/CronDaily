@@ -1,0 +1,12 @@
+#! /bin/bash
+# Daily checks (see crontab -l)
+[ -z "$ZCI_UTILS_CHECKOUT" ] && {
+    . ~/.bashrc
+    [ -z "$ZCI_UTILS_CHECKOUT" ] && {
+        echo "*** No ZCI_UTILS_CHECKOUT configured" >&2
+        exit 13
+    }
+}
+git -C "$ZCI_UTILS_CHECKOUT" fetch >/dev/null 2>&1
+exit 0
+

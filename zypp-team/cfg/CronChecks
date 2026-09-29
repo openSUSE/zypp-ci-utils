@@ -1,0 +1,16 @@
+#! /bin/bash
+# Hourly checks (see crontab -l)
+[ -z "$ZCI_UTILS_CHECKOUT" ] && {
+    . ~/.bashrc
+    [ -z "$ZCI_UTILS_CHECKOUT" ] && {
+        echo "*** No ZCI_UTILS_CHECKOUT configured" >&2
+        exit 13
+    }
+}
+LINES=()
+readarray -t LINES < <(find ~/logs/ -cmin +240 -ls)
+(( ${#LINES[@]} )) && {
+	echo "*** No ZCI run since at least 4 hours" >&2
+	exit 13
+}
+exit 0

@@ -1,3 +1,56 @@
+New zyppci
+==========
+
+
+As root@zyppci
+--------------
+
+=== Login as root and add your ssh key to ~.ssh/authorized_keys
+
+=== (adjust timezone: timedatectl set-timezone Europe/Berlin)
+
+=== echo <<EOF >/etc/motd.d/zci
+   ____ _   __ __ ___     ___ _
+  |__  / \ / / . \ . \   /  _| |
+    / / \ V /|  _/  _/   | / | |
+   / /__ | | | | | |     | \_| |
+  /_____||_| |_| |_|     \___|_| is hosted here!
+                                 Please don't mess it up ;)
+  Contact: #discuss-zypp, ma, bzeller
+
+
+EOF
+
+=== If with legacy docker containers:
+zypper in docker docker-compose
+systemctl enable docker
+systemctl start docker
+
+=== User zci: uid=1000(zci) gid=1000(zci) groups=1000(zci),469(docker)
+    (docker.zci/env must match uid/gid)
+groupadd -g 1000 zci
+useradd -u 1000 -g zci -G docker zci
+echo <<EOF >/etc/sudoers.d/zci
+%zci ALL=(ALL) NOPASSWD: ALL
+EOF
+
+=== Add your ssh key to ~zci/.ssh/authorized_keys
+su - zci
+mkdir .ssh
+chmod 700 .ssh
+vi .ssh/authorized_keys
+exit
+
+- Install other needed packages:
+git gitk git-gui git-lfs podman cron
+osc build obs-service-go_modules obs-service-obs_scm obs-service-obs_scm-common obs-service-tar_scm obs-service-recompress obs-service-set_version
+
+#systemctl enable cron
+#systemctl start cron
+
+
+As zci@zyppci
+--------------
 [see bashrc]
 ##################################################
 export ZCI_USER_CONFIGDIR=~/.config/zypp-team
@@ -12,15 +65,7 @@ fi
 Setup:
 
 - Copy the zypp-team-submittkey to ~/.ssh
-
-- Get the zypp-ci-utils project:
-# cd ~
-# git config --global user.name 'zypp ci'
-# git config --global user.email zypp-internal@suse.com
-# git clone git@github.com:openSUSE/zypp-ci-utils.git
-
-
-- Lauch an ssh-agent
+- Launch an ssh-agent
 Call ($ZCI_UTILS_CHECKOUT/zypp-team/bin/)ssh4cron to launch an ssh-agent
 if not yet running and add the zypp-team-submittkey (passphrase needed). You
 can call it anytime to make sure the key is available (e.g. after reboot).
@@ -28,17 +73,43 @@ can call it anytime to make sure the key is available (e.g. after reboot).
 (The launched agents env vars are stored in ~/.ssh4cron. Sourcing it gives you
 access to the agent. That's done by bashrc if ~/.ssh4cron
 
+- Get the zypp-ci-utils project:
+# cd ~
+# git config --global user.name 'zypp ci'
+# git config --global user.email zypp-internal@suse.com
+# git config --global pull.rebase true
+# git clone git@github.com:openSUSE/zypp-ci-utils.git
 
-- Copy and setups config files:
+
+- Copy and setups config files: In $ZCI_UTILS_CHECKOUT"/zypp-team/cfg:
+# cp bashrc ~/.bashrc
+# cp bash_profile ~/.bash_profile
+# (exec bash)
+
 # mkdir --parents "$ZCI_USER_CONFIGDIR"
-# cp "$ZCI_UTILS_CHECKOUT"/zypp-team/cfg/* "$ZCI_USER_CONFIGDIR"
-
+# cp gitea-config  oscrc "$ZCI_USER_CONFIGDIR"
 Set auth tokens in oscrc and gitea-config so the configuration allows to
 access IBS/OBS/GITEA as user zypp-team. Extending the PATH will then provide
 git-ibs-zt  git-obs-zt  isc-zt  osc-zt commands to access IBS/OBS/GITEA as user
 zypp-team. Scripts in "$ZCI_UTILS_CHECKOUT/zypp-team/bin" will refer to these
 commands.
 
+# cp Cron* ~/bin
+Setup for cron (crontab -e) (later, if everyting is done)
+
+
+
+---
+# ###########################################################################
+MAILTO="zypp-maintainers@suse.de"
+# ###########################################################################
+# m h   D M WD (0 or 7 is Sun)
+42 */1  * * *   $HOME/bin/CronChecks
+13 5    * * *   $HOME/bin/CronDaily
+13 6    * * 1   $HOME/bin/CronWeekly
+# ###########################################################################
+*/10 *  * * *   $HOME/zypp-ci-utils/zypp-team/bin/ZCI --silent
+---
 
 - Setup the ZCI_WORKSPACE:
 # mkdir --parents "$ZCI_WORKSPACE"
@@ -47,12 +118,11 @@ commands.
 The magic .giteastats file is needed to enable using this directory for all
 kinds of necessary checkouts.
 
-
 ##################################################
 ZCI (ATM via docker):
 
-See also zypp-ci-utils/docker.zci/README.
-and zypp-ci-utils/zypp-team/bin/ZCI --help
-
+- Workspace for the docker based ZCI container defined in zypp-ci-utils/docker.zci.
+# mkdir --parents ~/DOCKER_ZCI_WORKSPACE
+See also the zypp-ci-utils/docker.zci/README and "ZCI --help" (OUTSIDE THE CONTAINER!)
 Triggered by cron (crontab -l).
 
