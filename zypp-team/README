@@ -48,6 +48,11 @@ osc build obs-service-go_modules obs-service-obs_scm obs-service-obs_scm-common 
 #systemctl enable cron
 #systemctl start cron
 
+=== Make sure postfix is installed and configured
+Cronjobs will send mail to "zypp-maintainers@suse.de". 
+Setupscript from Olaf: Insatll postfix and run it.
+https://gitlab.suse.de/virtualization/provo-lab/devlab-srv/-/blob/master/rpm/postfix.sh?ref_type=heads
+
 
 As zci@zyppci
 --------------
