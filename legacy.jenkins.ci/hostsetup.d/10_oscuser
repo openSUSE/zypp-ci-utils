@@ -1,5 +1,0 @@
-#! /bin/bash
-set -e
-test -e ~/.oscrc || {
-    ln -s .ssh/ci-oscrc ~/.oscrc
-}

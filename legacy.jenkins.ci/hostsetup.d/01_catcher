@@ -1,9 +1,0 @@
-#! /bin/bash
-set -e
-
-cat <<EOF
-Z_HOST	$Z_HOST
-Z_LABEL	$Z_LABEL
-EOF
-
-test -n "$Z_LABEL"
