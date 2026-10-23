@@ -15,18 +15,22 @@ def checkWorkspaceMagic( magicfile ):
 # Our default BuildService instances
 #
 class Obs( BuildService ):
-    _bscmd = ("osc",)
+    _bscmd = ("osc",)   # the cmd to execute
+    _usrname = "osc"    # a user friendly name for the above cmd (in messages e.g.)
 
 class Ibs( BuildService ):
     _bscmd = ("isc",)    # if alias or ("osc","-A","https://api.suse.de")
+    _usrname = "isc"
 
 #======================================================================
 # Our default Gitea instances
 #
-Gitea.USER = "mlandres" # Owner of the forks
+Gitea.USER = "nobody" # Owner of the forks
 
 class GitObs( Gitea ):
     _bscmd = ("git-obs",)
+    _usrname = "git-obs"
 
 class GitIbs( Gitea ):
     _bscmd = ("git-ibs",)   # if alias or ("git-obs","-G","ibs") or similar
+    _usrname = "git-ibs"

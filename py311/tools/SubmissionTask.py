@@ -247,7 +247,7 @@ class SubmissionTask:
     def summarizeFate( self ):
         somethingToDO = False
         # on the fly check unprocessed parent branches
-        knownBranches = set( m[1] for m in self.trg.git( "branch", "-r" ).stdout( stdout="^\s*parent/([^ ]*)$", quiet=True ).byMatch() )
+        knownBranches = set( m[1] for m in self.trg.git( "branch", "-r" ).stdout( stdout=r"^\s*parent/([^ ]*)$", quiet=True ).byMatch() )
         sawBranches   = set( ('factory',) )    # strip it
 
         self.stats.fromObs.LOG( self.src )

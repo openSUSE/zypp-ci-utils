@@ -6,7 +6,7 @@ from .Cmd import *
 #======================================================================
 def guessVersionFromTarball( tar ):
     # Guess version from tarball
-    m = re.search( '-([^-]*)\.tar\.', tar )
+    m = re.search( r'-([^-]*)\.tar\.', tar )
     if m is None:
         raise Exception( f"guessVersionFromTarball: no version in {tar}" )
     return m[1]
@@ -67,7 +67,7 @@ class _Pkg( _GiteaWorkspace ):
             Bprint( self.TAG, "assertCheckout" )
             self.assertWsDir()
             if not self.gitobs( "repo", "clone", f"{self.GITEAUSER}/{self.pkg}" ).tryrun( cwd=self.wsRoot ):
-                raise Exception( f"Missing fork? (git-obs repo fork pool/{self.pkg})" )
+                raise Exception( f"Missing fork? Run: {self.gitobs._usrname} repo fork pool/{self.pkg}" )
 
     def getOpenPRs( self, prbranch, *, state="open", quiet=True ):
         # return the open PRs ("requests" list from json)
@@ -187,7 +187,7 @@ class _Pkg( _GiteaWorkspace ):
         else:
             if forceAt is None: forceAt = "origin/HEAD"
             self.git( "reset", "--hard", forceAt ).run()
-            self.git( "push" ).run()
+            self.git( "push", "--set-upstream", "origin", f"{branch}").run()
 
         out = self.git( "status", "--porcelain" ).stdout()
         if out: # clean if no output from "status"
@@ -246,10 +246,10 @@ class _Pkg( _GiteaWorkspace ):
         newChanges = None  # if .changes (None if up-to-date)
         if out:
             newChanges = bool(out.theLine( f"{self.pkg}.changes", missingOk=True ))
-            delv = out.theLine( f"^D\s*{self.pkg}-.*\.tar\.", missingOk=True )
+            delv = out.theLine( rf"^D\s*{self.pkg}-.*\.tar\.", missingOk=True )
             if delv:
                 # expecting a deleted and an added tarball/version
                 curVersion = guessVersionFromTarball( delv )
-                newVersion = guessVersionFromTarball( out.theLine( f"^A\s*{self.pkg}-.*\.tar\." ) )
+                newVersion = guessVersionFromTarball( out.theLine( rf"^A\s*{self.pkg}-.*\.tar\." ) )
         return ( curVersion, newVersion, newChanges )
 

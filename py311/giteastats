@@ -1,4 +1,4 @@
-#! /usr/bin/python3.11
+#! /usr/bin/python3
 import sys, os, traceback
 from tools import *
 #======================================================================
@@ -21,9 +21,29 @@ def usage():
     print(f'''Usage: {os.path.basename(sys.argv[0])} [PKG|PBRANCH]..
 ''')
 
-def main():
+#======================================================================
+def setup():
+    configsdir      = os.environ['ZCI_USER_CONFIGDIR']
+    gitobscmd       = ("git-obs","--gitea-config",f"{configsdir}/gitea-config")
+    osccmd          = ("osc","--config",f"{configsdir}/oscrc")
+    #
+    Gitea.USER      = "zypp-team"                    # Owner of the forks
+    GitObs._bscmd   = (*gitobscmd,"-G","obs-zt",)
+    GitIbs._bscmd   = (*gitobscmd,"-G","ibs-zt",)
+    Obs._bscmd      = (*osccmd,"-A","https://api.opensuse.org")
+    Ibs._bscmd      = (*osccmd,"-A","https://api.suse.de" )
+
+    if False: # access check
+        Obs("user").run()
+        # Ibs("user").run() - for whatever reason IBS does not work for zypp-team
+        GitIbs("repo","list","--user",Gitea.USER).run()
+        GitObs("repo","list","--user",Gitea.USER).run()
+
     checkWorkspaceMagic( ".giteastats" )    # Prevent us from doing checkouts at arbitrary CWDs
-    fetchDelay = 60
+
+def main():
+    setup()
+    fetchDelay = 60 # do git fetch once an hour
 
     obsSourcePrj   = Obs.Prj("zypp:Head")
     giteaTarget    = GitIbs
