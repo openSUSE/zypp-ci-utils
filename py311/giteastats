@@ -23,19 +23,22 @@ def usage():
 
 #======================================================================
 def setup():
+    # The directory where gitea-config and oscrc reside
     configsdir      = os.environ['ZCI_USER_CONFIGDIR']
+    # Basic command stems for git-obs and obs so they refer to the configs in configsdir
     gitobscmd       = ("git-obs","--gitea-config",f"{configsdir}/gitea-config")
     osccmd          = ("osc","--config",f"{configsdir}/oscrc")
-    #
-    Gitea.USER      = "zypp-team"                    # Owner of the forks
+    # Extending the command stems to refer to ibs/obs (build.suse.de/build.opensuse.org)
+    # and GitIbs/GitObs (src.suse.de/src.opensuse.org)
+    Gitea.USER      = "zypp-team"                       # Owner of the forks GitIbs/GitObs
     GitObs._bscmd   = (*gitobscmd,"-G","obs-zt",)
     GitIbs._bscmd   = (*gitobscmd,"-G","ibs-zt",)
     Obs._bscmd      = (*osccmd,"-A","https://api.opensuse.org")
     Ibs._bscmd      = (*osccmd,"-A","https://api.suse.de" )
 
-    if False: # access check
+    if False: # access check to the 4 instances
         Obs("user").run()
-        # Ibs("user").run() - for whatever reason IBS does not work for zypp-team
+        Ibs("user").run() # for whatever reason IBS does not work for zypp-team, need a true user able to submit
         GitIbs("repo","list","--user",Gitea.USER).run()
         GitObs("repo","list","--user",Gitea.USER).run()
 
@@ -45,6 +48,39 @@ def main():
     setup()
     fetchDelay = 60 # do git fetch once an hour
 
+    # Configuration for the SubmissionTask(...) calls below (after the help and usage stuff)
+    # remotes:
+    #   origin - your forks from pool/   (PR source)
+    #   parent - pool/ the pool packages (PR target)
+    #
+    # SubmissionTask(..) checks the intended git branch structure of the configured packages.
+    #
+    # - Obs-zypp-Head: Represents the intended last submitted version. The possible next version
+    #   are the data copied from obsSourcePrj(obs:/zypp:Head) as local changes into the Obs-zypp-Head
+    #   checkout. Obs-zypp-Head and origin/Obs-zypp-Head are always in sync. We hard reset Obs-zypp-Head
+    #   to origin/Obs-zypp-Head and then copy the data from obsSourcePrj to see whether these are diffs.
+    #   ONLY on --submit the local changes are wrapped in to a commit and pushed to origin/Obs-zypp-Head
+    #   (as the next release)
+    #
+    # - Local slfo-* and origin/slfo-* branches. These branches should slavishly follow Obs-zypp-Head
+    #   and origin/Obs-zypp-Head. They only exist because the PR review tools expect PR source and target
+    #   branches to have the same name. Otherwise We'd PR from origin/Obs-zypp-Head to parent/slfo-*
+    #
+    # SubmissionTask(..) checks this structure, and determines whether OBS has new data thet could be submitted
+    # (new version and changes file). Also checks whether PRs are running (origin/slfo-* != parent/slfo-*) or
+    # would need to be filed. All this is stored inside the task structure returned from the call.
+    #
+    # After all packages and branches are processed, the collect task structures are used to write the SUMMARY,
+    # or if --submit is set do the necessary commits to amend runnign PRs or file new ones if needed.
+    #
+    # NOTE: ATM related with giteaTarget(GitIbs) are the knownPkgs and knownPbranches ON GitIbs. The code
+    # processes the matrix of (knownPkgs x knownPbranches). New packages and branches can eb added any time,
+    # but there's no mechanism to exclude certain packages from certain branches. This would need to be
+    # implemented.
+    # In case in the future submissions to GitObs (src.opensuse.org) are needed. You need  knownPkgs and
+    # knownPbranches per giteaTarget (GitIbs,gitObs) and call SubmissionTask(...) accordingly. The returned
+    # task may shown or submitted in any order (AFAIK ther's no constraint that the tasks must be processed
+    # in the order thaty were created)
     obsSourcePrj   = Obs.Prj("zypp:Head")
     giteaTarget    = GitIbs
     knownPkgs      = ( "libsolv", "libzypp", "zypper", "zypp-plugin" )
