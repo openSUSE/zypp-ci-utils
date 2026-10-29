@@ -1,0 +1,62 @@
+#! /bin/bash
+# ############################################################
+
+function catargs()
+{
+    if (( $# )); then
+	for f in "$@"; do
+	    case $f in
+		*.gz)
+		    zcat "$f"
+		    ;;
+		*.bz2)
+		    bzcat "$f"
+		    ;;
+		*.lzma)
+		    lzcat "$f"
+		    ;;
+		*.xz)
+		    xzcat "$f"
+		    ;;
+		*.zst)
+		    zstdcat "$f"
+		    ;;
+		*)
+		    cat "$f"
+		    ;;
+	    esac
+	done
+    else
+	cat
+    fi
+}
+
+catargs "$@" | awk -vYAST="$YAST" '
+  function colorprint(c){ print c $0 "\033[0m" }
+  function Rprint()	{ colorprint("\033[0;31m") }
+  function Gprint()	{ colorprint("\033[0;32m") }
+  function Bprint()	{ colorprint("\033[0;34m") }
+  function Cprint()	{ colorprint("\033[0;36m") }
+  function Mprint()	{ colorprint("\033[0;35m") }
+  function Yprint()	{ colorprint("\033[0;33m") }
+  function BLprint()	{ colorprint("\033[0;30m") }
+  function WHprint()	{ colorprint("\033[1;37m") }
+
+  function Headline()	{ colorprint("\033[0;42m") }
+
+  /genericfrontend.cc.*Launched YaST2 component/	{ Headline(); next; }
+  /bin.y2start.*y2base called with/			{ Headline(); next; }
+  /main.cc.main.*=====/					{ Headline(); next; }
+
+  /<0>/	{ if ( YAST ) next; Cprint(); next; }
+  /<1>.*\+\+\]/{ sub("<1>","<0>",$0); sub("\\+\\+\\]","]",$0); Cprint(); next; }
+  /<2>/	{ Yprint(); next; }
+  /<3>/	{ Rprint(); next; }
+  /<4>/	{ Mprint(); next; }
+  /<5>/	{ Gprint(); next; }
+  /<6>/	{ Bprint(); next; }
+  /ZYppFactory.cc.*ZYpp is (on|off).../	{ Bprint(); next; }
+  /\[BLOCK\]/				{ Bprint(); next; }
+
+  { print; next; }
+'

@@ -1,0 +1,19 @@
+#! /bin/bash
+# ############################################################
+CATARGS=()
+X=
+for ARG in "$@"; do
+    case "$ARG" in
+	-X)
+	    X="-X"
+	    ;;
+	-Y)
+	    export YAST=1
+	    ;;
+	*)
+	    CATARGS+=("$ARG")
+	    ;;
+    esac
+done
+
+ycat "${CATARGS[@]}" | less -S $X
